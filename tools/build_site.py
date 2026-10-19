@@ -234,6 +234,22 @@ def main():
             })
             print(f"  wideband {vid}: pesq={p} wire={meta.get('bitrate_kbps_wire')}")
 
+    if not items:
+        sys.exit(
+            "no measurement outputs found, so data.json was left untouched.\n"
+            "\n"
+            "The page ships with data.json and assets/clips already committed; rebuilding them\n"
+            "is only needed when you re-measure. To do that:\n"
+            "\n"
+            "  DECOMP=/path/to/wowdecomp ./tools/build.sh\n"
+            "  ./tools/run_preview.sh\n"
+            "  ./tools/run_wideband.sh corpus/librispeech_16k.wav\n"
+            "  ./tools/build_site.py\n"
+            "\n"
+            "Expected inputs: corpus/<name>_ref8.wav, corpus/<name>_ref16.wav and the matching\n"
+            "out/<name>_*.wav + out/<name>_*.csv produced by the two run scripts."
+        )
+
     data = {
         "generated": subprocess.run(["date", "-u", "+%Y-%m-%d"], capture_output=True, text=True).stdout.strip(),
         "narrowband": items,
@@ -241,7 +257,9 @@ def main():
         "deliveryCodec": f"MP3 {MP3_BITRATE} mono, {TARGET_LUFS} LUFS",
         "corpus": "Open Speech Repository, American English, 8 kHz (voiptroubleshooter.com)",
     }
-    (site / "data.json").write_text(json.dumps(data, indent=2))
+    tmp = site / "data.json.tmp"
+    tmp.write_text(json.dumps(data, indent=2))
+    os.replace(tmp, site / "data.json")
     print(f"wrote {site / 'data.json'} ({len(items)} narrowband, {len(wideband)} wideband clips)")
 
 

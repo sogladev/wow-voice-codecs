@@ -74,10 +74,20 @@ this scale for roughly double the bandwidth of today's protocol.
 
 Full report, including the caveats: [RESULTS.md](RESULTS.md).
 
+## Viewing the page
+
+`./serve.sh` is enough. `data.json` and `assets/clips/` are committed, so the page works
+straight after a clone — **do not run `tools/build_site.py` just to look at it.**
+
+`corpus/` and `out/` are local working directories (gitignored) that only exist after a
+measurement run. `corpus/` holds the test speech, `out/` holds every decoded WAV plus a CSV
+per run.
+
 ## Reproducing the numbers
 
 The measurements need two things this repository does not ship: the decompiled 3.3.5a
-client (Spirit IPMR is its codec, and it is not redistributed here) and libopus.
+client (Spirit IPMR is its codec, and it is not redistributed here) and libopus. Point
+`DECOMP` at a decompiled client checkout; that tree is read, never modified.
 
 ```bash
 DECOMP=/path/to/wowdecomp ./tools/build.sh     # builds the IPMR probe
@@ -86,6 +96,11 @@ DECOMP=/path/to/wowdecomp ./tools/build.sh     # builds the IPMR probe
 ./tools/build_site.py                          # clips + PESQ + data.json for this page
 ./serve.sh                                     # http://127.0.0.1:8788/
 ```
+
+`build_site.py` refuses to write `data.json` when it finds no measurement outputs: it
+prints what it expected and leaves the committed file untouched, so a half-configured run
+cannot leave the page blank. If `data.json` ever does end up empty, `git checkout --
+data.json` restores the shipped version.
 
 `./tools/build_site.py` trims every clip to the same 10 second window, normalises them to
 −20 LUFS, writes a WAV at the source rate plus a 192 kbit/s mono MP3 for the player,

@@ -188,6 +188,24 @@ function buildPlayer(root, variants) {
   return player;
 }
 
+function emptyBuildNotice() {
+  const notice = document.createElement("section");
+  notice.className = "panel notice";
+  notice.innerHTML =
+    "<h2>data.json has no clips</h2>" +
+    "<p>The page loaded, but the file it reads contains no measurements, so there is nothing to play. " +
+    "This happens when <code>tools/build_site.py</code> runs without the measurement outputs: it used to " +
+    "overwrite <code>data.json</code> with an empty list, which is fixed now, but the file can still be " +
+    "empty if a build was interrupted.</p>" +
+    "<p>Restore the committed version, or rebuild the clips:</p>" +
+    "<pre><code>git checkout -- data.json\n\n" +
+    "DECOMP=/path/to/wowdecomp ./tools/build.sh\n" +
+    "./tools/run_preview.sh\n" +
+    "./tools/run_wideband.sh corpus/librispeech_16k.wav\n" +
+    "./tools/build_site.py</code></pre>";
+  document.querySelector("main").prepend(notice);
+}
+
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
   const m = Math.floor(sec / 60);
@@ -315,6 +333,13 @@ async function main() {
   }
 
   state.data = data;
+
+  if (!(data.narrowband || []).length) {
+    emptyBuildNotice();
+    renderFooter(data);
+    return;
+  }
+
   renderFooter(data);
   renderTable(data.narrowband.filter((v) => v.group === "nb"), "#nb-table");
   renderTable(data.narrowband.filter((v) => v.group === "loss"), "#loss-table");
