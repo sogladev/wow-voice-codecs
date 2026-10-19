@@ -76,6 +76,7 @@ function buildPlayer(root, configs) {
   const nowPlaying = root.querySelector(".now-playing");
   const note = root.querySelector(".config-note");
   const blindToggle = root.querySelector(".blind-toggle");
+  const loopToggle = root.querySelector(".loop-toggle");
   const revealBtn = root.querySelector(".reveal");
 
   const blindOrder = shuffle(configs.map((c) => c.id));
@@ -175,6 +176,12 @@ function buildPlayer(root, configs) {
     }
   });
 
+  if (loopToggle) {
+    loopToggle.addEventListener("change", () => {
+      audio.loop = loopToggle.checked;
+    });
+  }
+
   audio.addEventListener("play", () => { playBtn.textContent = "Pause"; });
   audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
   audio.addEventListener("ended", () => { audio.currentTime = 0; });
@@ -199,6 +206,26 @@ function buildPlayer(root, configs) {
     blindToggle.checked = false;
     refreshLabels();
   });
+
+  player.preloadForCurrentSample = () => {
+    const item = state.data.items[state.itemIndex];
+    if (!item) return;
+    const conn = navigator.connection || {};
+    if (conn.saveData || conn.effectiveType === "slow-2g" || conn.effectiveType === "2g") return;
+    const queue = player.configs.filter((c) => c.id !== player.current && item.clips[c.id]);
+    const next = () => {
+      const cfg = queue.shift();
+      if (!cfg) return;
+      const probe = new Audio();
+      probe.preload = "auto";
+      probe.addEventListener("canplaythrough", next, { once: true });
+      probe.addEventListener("error", next, { once: true });
+      probe.src = item.clips[cfg.id].mp3;
+    };
+    next();
+  };
+
+  audio.addEventListener("playing", () => player.preloadForCurrentSample(), { once: true });
 
   player.applyClip({ keepPlaying: false });
   refreshLabels();

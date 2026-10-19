@@ -16,8 +16,10 @@ import pathlib
 import subprocess
 import sys
 
-CLIP_START = "1"
-CLIP_LEN = "8"
+# whole samples, nothing trimmed: the point of a complete utterance is that no
+# sentence is cut in half, which is exactly what made the first version awkward
+CLIP_START = None
+CLIP_LEN = None
 MP3_BITRATE = "128k"
 TARGET_LUFS = "-20"
 
@@ -95,12 +97,16 @@ def source_rate(path):
 
 
 def clip(src, dst_base):
-    """8 second clip, loudness matched, MP3 for the player."""
+    """Whole sample, loudness matched, MP3 for the player."""
     mp3 = dst_base + ".mp3"
     tmp = dst_base + ".wav"
     rate = source_rate(src)
-    r = run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src,
-             "-ss", CLIP_START, "-t", CLIP_LEN,
+    trim = []
+    if CLIP_START is not None:
+        trim += ["-ss", CLIP_START]
+    if CLIP_LEN is not None:
+        trim += ["-t", CLIP_LEN]
+    r = run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src, *trim,
              "-af", f"loudnorm=I={TARGET_LUFS}:TP=-2:LRA=7",
              "-ar", str(rate), "-c:a", "pcm_s16le", tmp])
     if r.returncode != 0:

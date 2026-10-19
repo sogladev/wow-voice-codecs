@@ -5,10 +5,11 @@ client and Opus, with the bandwidth, PESQ and packet-loss numbers that go with i
 
 **The page:** https://sogladev.github.io/wow-voice-codecs/
 
-Four samples, one list of configurations. Every clip is the same eight seconds of the same
-sentence, so switching between configurations changes only the codec; switching between
-samples changes only the sentence. Playback position is kept across a switch, and the
-names can be hidden for a blind test.
+Four samples, one list of configurations. Each clip is a complete utterance, 12 to 29
+seconds, with nothing cut off, so switching between configurations changes only the codec
+and switching between samples changes only the sentence. Playback position is kept across a
+switch, there is a loop toggle for sitting on one phrase, and the names can be hidden for a
+blind test.
 
 ## What the old codec is
 
@@ -28,44 +29,47 @@ top of the scale. Wire bitrate includes the client's 7-byte voice header plus UD
 
 | configuration | band | wire kbit/s | pkt/s | max packet | PESQ-WB | STOI |
 |---|---|---|---|---|---|---|
-| **8 kHz ceiling** (reference cut to 4 kHz) | 8 kHz | – | – | – | **2.58** | 0.994 |
-| today: Spirit IPMR, 100 ms packets | 8 kHz | 9.0 | 10 | 114 B | 1.56 | 0.856 |
-| Opus 9.6 kbit/s, 100 ms packets | 8 kHz | 11.2 | 10 | 118 B | 2.09 | 0.885 |
-| Opus 9.6 kbit/s, 60 ms packets | 8 kHz | 13.6 | 17 | 90 B | 2.26 | 0.895 |
-| Opus 9.6 kbit/s, 100 ms packets | 16 kHz | 11.3 | 10 | 119 B | 2.70 | 0.858 |
-| Opus 16 kbit/s, 100 ms packets | 16 kHz | 16.9 | 10 | 197 B | 4.05 | 0.904 |
-| Opus 16 kbit/s, 60 ms packets | 16 kHz | 20.4 | 17 | 164 B | 4.27 | 0.911 |
-| Opus 24 kbit/s, 60 ms packets | 16 kHz | 28.4 | 17 | 228 B | 4.45 | 0.917 |
-| Opus 32 kbit/s, 60 ms packets | 16 kHz | 36.3 | 17 | 299 B | 4.48 | 0.920 |
+| **8 kHz ceiling** (reference cut to 4 kHz) | 8 kHz | – | – | – | **2.50** | 0.994 |
+| today: Spirit IPMR, 100 ms packets | 8 kHz | 9.0 | 10 | 114 B | 1.50 | 0.856 |
+| Opus 9.6 kbit/s, 100 ms packets | 8 kHz | 11.2 | 10 | 119 B | 2.04 | 0.885 |
+| Opus 9.6 kbit/s, 60 ms packets | 8 kHz | 13.6 | 17 | 90 B | 2.21 | 0.895 |
+| Opus 9.6 kbit/s, 100 ms packets | 16 kHz | 11.3 | 10 | 119 B | 2.64 | 0.858 |
+| Opus 16 kbit/s, 100 ms packets | 16 kHz | 16.9 | 10 | 197 B | 4.04 | 0.904 |
+| Opus 16 kbit/s, 60 ms packets | 16 kHz | 20.3 | 17 | 164 B | 4.28 | 0.911 |
+| Opus 24 kbit/s, 60 ms packets | 16 kHz | 28.3 | 17 | 228 B | 4.47 | 0.917 |
+| Opus 32 kbit/s, 60 ms packets | 16 kHz | 36.2 | 17 | 299 B | 4.52 | 0.920 |
 
 With 5 % packet loss (one datagram in twenty):
 
 | configuration | band | wire kbit/s | PESQ-WB |
 |---|---|---|---|
-| today: Spirit IPMR | 8 kHz | 9.0 | 1.44 |
-| Opus 9.6 kbit/s, 60 ms, with FEC | 8 kHz | 13.7 | 1.86 |
+| today: Spirit IPMR | 8 kHz | 9.0 | 1.39 |
+| Opus 9.6 kbit/s, 60 ms, with FEC | 8 kHz | 13.7 | 1.81 |
 | Opus 16 kbit/s, 60 ms, with FEC | 16 kHz | 20.4 | 2.82 |
 
 Three conclusions:
 
-- **The ceiling row is the point.** No codec choice can push an 8 kHz pipeline past 2.58,
+- **The ceiling row is the point.** No codec choice can push an 8 kHz pipeline past 2.50,
   because the audio above 4 kHz was never captured. Codec quality inside 8 kHz is much
-  closer to free: Opus at 9.6 kbit/s goes 1.56 → 2.26 for about 4 kbit/s more.
-- **Bandwidth is the real lever.** 16 kHz at 16–24 kbit/s reaches 4.05–4.45. The 164–228
+  closer to free: Opus at 9.6 kbit/s goes 1.50 → 2.21 for about 4 kbit/s more.
+- **Bandwidth is the real lever.** 16 kHz at 16–24 kbit/s reaches 4.04–4.47. The 164–228
   byte packets no longer fit the client's 124-byte frame cap, so this is the step that
   needs the framing and time-base hooks, not just the codec hook.
 - **Wideband at today's bitrate is the cheap middle step.** Opus at 9.6 kbit/s in
   100 ms packets has a 119-byte largest packet: it fits the existing cap, needs no framing
-  work, and scores 2.70. Wideband Opus at 16 kbit/s needs 197 bytes for 4.05.
+  work, and scores 2.64. Wideband Opus at 16 kbit/s needs 197 bytes for 4.04.
 
 On the narrowband scale, where both sides are band-limited to 4 kHz and the ceiling row
-does not apply, the same runs score 2.89 (IPMR) against 3.95 and 4.22 (Opus at 9.6 kbit/s,
+does not apply, the same runs score 2.78 (IPMR) against 3.95 and 4.21 (Opus at 9.6 kbit/s,
 100 ms and 60 ms). Both views are real; they answer different questions: "is the codec
 better in the same band" and "how much does bandwidth buy".
 
 ## Viewing the page
 
-`./serve.sh` is enough. `data.json` and `assets/clips/` are committed, so the page works
+`./serve.sh` is enough. It runs `tools/serve.py`, a small static server that implements
+byte ranges: `python3 -m http.server` does not, and without ranges the browser treats the
+audio as unseekable, so the seek bar and the position-preserving switching quietly stop
+working. GitHub Pages serves ranges, so the deployed page is unaffected. `data.json` and `assets/clips/` are committed, so the page works
 straight after a clone — **do not run `tools/build_site.py` just to look at it.**
 
 `corpus/` and `out/` are local working directories (gitignored) that only exist after a
@@ -96,8 +100,8 @@ recomputes PESQ and STOI, and rewrites `data.json`.
 
 ## Speech corpus
 
-**LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12): four sentences at 16 kHz, ten seconds
-each, in `corpus/items/`. Every sample is a 16 kHz recording, which is what lets the same
+**LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12): four complete utterances at 16 kHz,
+12 to 29 seconds each, in `corpus/items/`. Every sample is a 16 kHz recording, which is what lets the same
 audio go through both an 8 kHz and a 16 kHz pipeline and be scored on one scale.
 
 One speaker reads audiobook prose. That is fine for hearing codec artifacts and it keeps the

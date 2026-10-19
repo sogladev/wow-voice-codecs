@@ -23,7 +23,7 @@
       <div><dt>today's payload</dt><dd>6.2 kbit/s</dd></div>
       <div><dt>today, on the wire</dt><dd>9.0 kbit/s</dd></div>
       <div><dt>Opus, same packet shape</dt><dd>11.2 kbit/s</dd></div>
-      <div><dt>PESQ, today vs Opus</dt><dd>1.56 &rarr; 4.27</dd></div>
+      <div><dt>PESQ, today vs Opus</dt><dd>1.50 &rarr; 4.28</dd></div>
     </dl>
   </header>
 
@@ -34,6 +34,8 @@
         One list, ordered from today's protocol up to wideband. The two rows marked <em>reference</em> are not
         codecs: the original 16&nbsp;kHz recording, and the same recording cut to 4&nbsp;kHz, which is the
         ceiling any 8&nbsp;kHz pipeline is stuck under.
+        Every sample is a complete LibriSpeech utterance, 12 to 29&nbsp;seconds, with nothing cut off, so no
+        sentence stops in the middle. Use <em>loop</em> to sit on one phrase while switching.
       </p>
     </div>
 
@@ -49,6 +51,7 @@
         <input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
         <span class="time">0:00 / 0:08</span>
         <label class="blind"><input type="checkbox" class="blind-toggle"> blind test</label>
+        <label class="blind"><input type="checkbox" class="loop-toggle"> loop</label>
       </div>
       <div class="variants" role="group" aria-label="Choose configuration"></div>
       <p class="now-playing" aria-live="polite"></p>
@@ -79,6 +82,7 @@
         <input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
         <span class="time">0:00 / 0:08</span>
         <label class="blind"><input type="checkbox" class="blind-toggle"> blind test</label>
+        <label class="blind"><input type="checkbox" class="loop-toggle"> loop</label>
       </div>
       <div class="variants" role="group" aria-label="Choose configuration"></div>
       <p class="now-playing" aria-live="polite"></p>
@@ -96,7 +100,7 @@
         the way in, and <code>while (bits - consumed &gt;= 72)</code> on the way out.</li>
       <li>Opus is libopus 1.6 in VoIP mode, one encoder and one decoder per stream, with the frame sizes and
         packet layouts shown in the table.</li>
-      <li>Speech is four sentences from <strong>LibriSpeech</strong> dev-clean (16&nbsp;kHz, CC&nbsp;BY&nbsp;4.0).
+      <li>Speech is four complete utterances from <strong>LibriSpeech</strong> dev-clean (16&nbsp;kHz, CC&nbsp;BY&nbsp;4.0).
         Because the source is 16&nbsp;kHz, the same audio can be pushed through an 8&nbsp;kHz and a 16&nbsp;kHz
         pipeline, so one scale covers both.</li>
       <li>PESQ-WB and STOI are computed against the uncompressed 16&nbsp;kHz original. Loss runs drop every 20th

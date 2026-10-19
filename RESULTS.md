@@ -9,8 +9,10 @@ Reproduce with `./tools/build.sh`, `./tools/run_matrix.sh`, `./tools/build_site.
 
 ## Corpus
 
-Four sentences from **LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12), 16 kHz, cut to
-ten seconds each in `corpus/items/`. The point of a 16 kHz source is that the same audio
+Four complete utterances from **LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12), 16 kHz,
+12 to 29 seconds each, in `corpus/items/`. Nothing is trimmed: a clipped sample can stop in
+the middle of a word, which makes both listening and PESQ worse for reasons unrelated to
+the codec. The point of a 16 kHz source is that the same audio
 can be pushed through an 8 kHz pipeline and a 16 kHz pipeline, so both can be scored
 against one reference.
 
@@ -44,43 +46,43 @@ Wire bitrate includes the 7-byte client header plus UDP and IPv4 overhead.
 
 | configuration | band | wire kbit/s | pkt/s | max packet | PESQ-WB | STOI |
 |---|---|---|---|---|---|---|
-| 8 kHz ceiling (reference cut to 4 kHz) | 8 kHz | – | – | – | 2.58 | 0.994 |
-| today: Spirit IPMR, 100 ms | 8 kHz | 9.0 | 10 | 114 B | 1.56 | 0.856 |
-| Opus 9.6 k, 100 ms | 8 kHz | 11.2 | 10 | 118 B | 2.09 | 0.885 |
-| Opus 9.6 k, 60 ms | 8 kHz | 13.6 | 17 | 90 B | 2.26 | 0.895 |
-| Opus 9.6 k, 100 ms | 16 kHz | 11.3 | 10 | 119 B | 2.70 | 0.858 |
-| Opus 16 k, 100 ms | 16 kHz | 16.9 | 10 | 197 B | 4.05 | 0.904 |
-| Opus 16 k, 60 ms | 16 kHz | 20.4 | 17 | 164 B | 4.27 | 0.911 |
-| Opus 24 k, 60 ms | 16 kHz | 28.4 | 17 | 228 B | 4.45 | 0.917 |
-| Opus 32 k, 60 ms | 16 kHz | 36.3 | 17 | 299 B | 4.48 | 0.920 |
+| 8 kHz ceiling (reference cut to 4 kHz) | 8 kHz | – | – | – | 2.50 | 0.994 |
+| today: Spirit IPMR, 100 ms | 8 kHz | 9.0 | 10 | 114 B | 1.50 | 0.856 |
+| Opus 9.6 k, 100 ms | 8 kHz | 11.2 | 10 | 119 B | 2.04 | 0.885 |
+| Opus 9.6 k, 60 ms | 8 kHz | 13.6 | 17 | 90 B | 2.21 | 0.895 |
+| Opus 9.6 k, 100 ms | 16 kHz | 11.3 | 10 | 119 B | 2.64 | 0.858 |
+| Opus 16 k, 100 ms | 16 kHz | 16.9 | 10 | 197 B | 4.04 | 0.904 |
+| Opus 16 k, 60 ms | 16 kHz | 20.3 | 17 | 164 B | 4.28 | 0.911 |
+| Opus 24 k, 60 ms | 16 kHz | 28.3 | 17 | 228 B | 4.47 | 0.917 |
+| Opus 32 k, 60 ms | 16 kHz | 36.2 | 17 | 299 B | 4.52 | 0.920 |
 
 Packet loss, one datagram in twenty, with in-band FEC where the codec has it:
 
 | configuration | band | wire kbit/s | PESQ-WB |
 |---|---|---|---|
-| today: Spirit IPMR | 8 kHz | 9.0 | 1.44 |
-| Opus 9.6 k, 60 ms, FEC | 8 kHz | 13.7 | 1.86 |
+| today: Spirit IPMR | 8 kHz | 9.0 | 1.39 |
+| Opus 9.6 k, 60 ms, FEC | 8 kHz | 13.7 | 1.81 |
 | Opus 16 k, 60 ms, FEC | 16 kHz | 20.4 | 2.82 |
 
 Narrowband cross-check: scored only inside 4 kHz, where the wideband ceiling does not
-apply, the same runs are 2.89 (IPMR), 3.95 (Opus 9.6 k, 100 ms) and 4.22 (Opus 9.6 k,
+apply, the same runs are 2.78 (IPMR), 3.95 (Opus 9.6 k, 100 ms) and 4.21 (Opus 9.6 k,
 60 ms). That is the "same band, better codec" view; the table above is the "what does
 bandwidth buy" view.
 
 ### What the numbers say
 
-1. **The ceiling row bounds everything built on 8 kHz.** 2.58 is the best an 8 kHz
+1. **The ceiling row bounds everything built on 8 kHz.** 2.50 is the best an 8 kHz
    pipeline can score, because nothing above 4 kHz was ever captured. Any plan that keeps
    8 kHz inherits that limit.
-2. **Codec quality inside 8 kHz is nearly free.** Opus at 9.6 kbit/s takes 1.56 → 2.26
-   for about 4 kbit/s more wire bandwidth, and the 100 ms configuration (118 B) fits the
+2. **Codec quality inside 8 kHz is nearly free.** Opus at 9.6 kbit/s takes 1.50 → 2.21
+   for about 4 kbit/s more wire bandwidth, and the 100 ms configuration (119 B) fits the
    client's 124-byte frame cap without touching the framing.
 3. **Wideband is the real step, and it is cheap at the low end.** 16 kHz at 9.6 kbit/s
-   scores 2.70 in a 119-byte packet: same cap, same packet rate, no framing work. The
-   step to 4.05–4.45 needs 16–24 kbit/s, which is 164–228 bytes per packet and therefore
+   scores 2.64 in a 119-byte packet: same cap, same packet rate, no framing work. The
+   step to 4.04–4.47 needs 16–24 kbit/s, which is 164–228 bytes per packet and therefore
    the framing and time-base hooks.
 4. **Packet-loss robustness is a separate upgrade.** Today's client drops to 1.44 at 5 %
-   loss because it has no concealment at all; Opus with FEC keeps 1.86 at 8 kHz and 2.82
+   loss because it has no concealment at all; Opus with FEC keeps 1.81 at 8 kHz and 2.82
    at 16 kHz.
 
 ## Caveats
