@@ -1,94 +1,60 @@
 #!/usr/bin/env python3
-"""Build the static comparison site: clips, metrics and data.json.
+"""Build the comparison site: clips, metrics and data.json.
 
-Every clip is trimmed from the same source segment, loudness-normalised the same
-way, and delivered as 192 kbit/s mono MP3 (plus the raw WAV for download), so the
-only difference a listener hears between two clips is the voice codec itself.
+The page has one comparison: every clip is 8 seconds of the same sentence, loudness
+matched and delivered as MP3, so switching between them changes only the codec. Each
+item (a sentence) is a 16 kHz recording, which is what lets an 8 kHz and a 16 kHz
+pipeline be compared on the same material and scored on one scale.
 
-Usage: ./build_site.py [--site DIR] [--preview DIR]
+Usage: ./tools/build_site.py [--site DIR] [--preview DIR]
 """
 
 import argparse
-import csv
 import json
 import os
 import pathlib
 import subprocess
 import sys
 
-CLIP_START = "4"
-CLIP_LEN = "10"
-MP3_BITRATE = "192k"
+CLIP_START = "1"
+CLIP_LEN = "8"
+MP3_BITRATE = "128k"
 TARGET_LUFS = "-20"
 
-# id, label, source wav, reference wav for PESQ, pesq mode, group, description
-VARIANTS = [
-    # --- narrowband, same band as today's protocol ---
-    ("ref8", "original (not compressed)", "corpus/osr0010_ref8.wav", None, None, "nb",
-     "The recording the others are compared against. 8 kHz, the same band today's codec is limited to."),
-    ("ipmr", "today: Spirit IPMR 6.4 kbit/s", "out/osr0010_ipmr8k.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "The 2007 codec, packetised exactly as the 3.3.5a client does: one 100 ms frame per datagram."),
-    ("opus_nb_6k", "Opus 6 kbit/s, 20 ms", "out/osr0010_opus8k_6000_f1.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "Opus narrowband at the same bitrate as today, in small packets."),
-    ("opus_nb_9k6_100", "Opus 9.6 kbit/s, 100 ms packets", "out/osr0010_opus8k_9600_f5.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "Opus narrowband in the same packet shape as today. Largest packet is 117 bytes, inside the client's 124-byte cap."),
-    ("opus_nb_9k6_60", "Opus 9.6 kbit/s, 60 ms packets", "out/osr0010_opus8k_9600_f3.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "The best measured balance: 13.1 kbit/s on the wire for a PESQ of 4.16."),
-    ("opus_nb_9k6_20", "Opus 9.6 kbit/s, 20 ms packets", "out/osr0010_opus8k_9600_f1.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "Same audio in small packets. Best loss behaviour, but the per-packet overhead doubles the wire cost."),
-    ("opus_nb_12k", "Opus 12 kbit/s, 20 ms", "out/osr0010_opus8k_12000_f1.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "Narrowband ceiling: needs 150 bytes per 100 ms, so it no longer fits today's frame limit."),
-    ("opus_nb_15k", "Opus 15 kbit/s, 20 ms", "out/osr0010_opus8k_15000_f1.wav", "corpus/osr0010_ref8.wav", "nb", "nb",
-     "Above what narrowband can use. Included to show where narrowband stops improving."),
+ITEMS = ["item1", "item2", "item3", "item4"]
 
-    # --- packet loss ---
-    ("ipmr_loss", "today: IPMR, 5 % loss", "out/osr0010_ipmr8k_loss5.wav", "corpus/osr0010_ref8.wav", "nb", "loss",
-     "What today's protocol does at 5 % packet loss: no concealment, the gaps are silence."),
-    ("opus_loss_60", "Opus 9.6 kbit/s, 60 ms, 5 % loss + FEC", "out/osr0010_opus8k_9600_f3_loss5.wav",
-     "corpus/osr0010_ref8.wav", "nb", "loss",
-     "Same 5 % loss with in-band forward error correction, which today's client has no equivalent of."),
-    ("opus_loss_20", "Opus 9.6 kbit/s, 20 ms, 5 % loss + FEC", "out/osr0010_opus8k_9600_f1_loss5.wav",
-     "corpus/osr0010_ref8.wav", "nb", "loss",
-     "Small packets shrink each loss to 20 ms, so the same loss pattern hurts less."),
-]
-
-# Wideband section. Every entry is scored with PESQ-WB against the 16 kHz reference,
-# so narrowband candidates (upsampled) and wideband candidates share one scale. The
-# "ceiling" clip is the uncompressed reference cut to 4 kHz: no 8 kHz pipeline can
-# score above it.
-WIDEBAND = [
-    ("wb_ceiling8k", "8 kHz ceiling: reference cut to 4 kHz",
-     "out/{name}_ceiling8k.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Not a codec: the uncompressed recording, band-limited to 4 kHz and upsampled. It is the best any 8 kHz pipeline can do."),
-    ("wb_ipmr", "today: Spirit IPMR, 8 kHz",
-     "out/{name}_ipmr8k.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "The 2007 codec scored on the wideband scale, so its missing 4-8 kHz band counts against it."),
-    ("wb_opus_nb_100", "Opus 9.6 kbit/s, 8 kHz, 100 ms packets",
-     "out/{name}_opus8k_f5.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Opus narrowband in today's packet shape. Better than IPMR, still capped by the 8 kHz ceiling."),
-    ("wb_opus_nb_60", "Opus 9.6 kbit/s, 8 kHz, 60 ms packets",
-     "out/{name}_opus8k_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Opus narrowband, shorter packets."),
-    ("wb_opus_nb_wb_9k6", "Opus 9.6 kbit/s, 16 kHz, 100 ms packets",
-     "out/{name}_opus16k_9600_f5.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Wideband in today's packet shape. 118 bytes maximum, so it still fits the client's 124-byte frame cap."),
-    ("wb_opus_wb_16k_f5", "Opus 16 kbit/s, 16 kHz, 100 ms packets",
-     "out/{name}_opus16k_16000_f5.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Wideband at 100 ms packets: 192 bytes, past the current cap."),
-    ("wb_opus_16k", "Opus 16 kbit/s, 16 kHz, 60 ms packets",
-     "out/{name}_opus16k_16000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "Wideband: twice the spectrum, first configuration that clears the ceiling."),
-    ("wb_opus_24k", "Opus 24 kbit/s, 16 kHz, 60 ms packets",
-     "out/{name}_opus16k_24000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
-     "The recommended balance if bandwidth is not scarce."),
-    ("wb_opus_32k", "Opus 32 kbit/s, 16 kHz, 60 ms packets",
-     "out/{name}_opus16k_32000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+# id, label, band, group, note
+CONFIGS = [
+    ("ref16", "original, 16 kHz", "16 kHz", "reference",
+     "The uncompressed recording everything else is compared against."),
+    ("ceiling8k", "8 kHz ceiling: the same audio limited to 4 kHz", "8 kHz", "reference",
+     "Not a codec. The recording band-limited to 4 kHz and upsampled, which is the best any 8 kHz pipeline can ever sound. Compare the rows under it against this one to see what bandwidth costs."),
+    ("ipmr", "today: Spirit IPMR, 8 kHz, 100 ms packets", "8 kHz", "codec",
+     "The 2007 codec, packetised exactly as the 3.3.5a client does: one 100 ms frame per datagram, 6.2 kbit/s of payload."),
+    ("nb96_100", "Opus 9.6 kbit/s, 8 kHz, 100 ms packets", "8 kHz", "codec",
+     "Opus narrowband in today's packet shape. Still 8 kHz, so it cannot pass the ceiling above."),
+    ("nb96_60", "Opus 9.6 kbit/s, 8 kHz, 60 ms packets", "8 kHz", "codec",
+     "Opus narrowband with shorter packets: better under loss, more per-packet overhead."),
+    ("wb96_100", "Opus 9.6 kbit/s, 16 kHz, 100 ms packets", "16 kHz", "codec",
+     "Wideband at today's bitrate. Its largest packet is 118 bytes, inside the client's 124-byte frame cap."),
+    ("wb16_100", "Opus 16 kbit/s, 16 kHz, 100 ms packets", "16 kHz", "codec",
+     "Wideband with real headroom. 192-byte packets, so this needs the frame cap lifted."),
+    ("wb16_60", "Opus 16 kbit/s, 16 kHz, 60 ms packets", "16 kHz", "codec",
+     "The balanced wideband setting."),
+    ("wb24_60", "Opus 24 kbit/s, 16 kHz, 60 ms packets", "16 kHz", "codec",
+     "Comfortable wideband if bandwidth is not scarce."),
+    ("wb32_60", "Opus 32 kbit/s, 16 kHz, 60 ms packets", "16 kHz", "codec",
      "Diminishing returns start here."),
+
+    ("ipmr_loss", "today: Spirit IPMR, 5 % packet loss", "8 kHz", "loss",
+     "One packet in twenty missing. Today's client has no concealment, so the gaps are silence."),
+    ("nb96_60_loss", "Opus 9.6 kbit/s, 8 kHz, 60 ms, 5 % loss + FEC", "8 kHz", "loss",
+     "Same loss with in-band forward error correction."),
+    ("wb16_60_loss", "Opus 16 kbit/s, 16 kHz, 60 ms, 5 % loss + FEC", "16 kHz", "loss",
+     "Wideband with the same loss and FEC."),
 ]
 
-# wideband corpora in order of preference: a real microphone recording, then the
-# standard 16 kHz speech corpus used for the published numbers
-WIDEBAND_SAMPLES = ["mic_sample_48k", "librispeech_16k"]
+RESAMPLE = {"nb": "8000", "wb": "16000"}
 
 
 def run(cmd, **kw):
@@ -107,32 +73,17 @@ def read_csv(path):
     return out
 
 
-_RESAMPLE_CACHE = {}
+class Resampler:
+    def __init__(self):
+        self.cache = {}
 
-
-def at_rate(path, mode):
-    """PESQ wants both files at one rate: 8 kHz for nb, 16 kHz for wb."""
-    rate = "8000" if mode == "nb" else "16000"
-    key = (path, rate)
-    if key not in _RESAMPLE_CACHE:
-        out = path + f".{rate}.wav"
-        r = run(["sox", path, "-b", "16", "-r", rate, out, "rate", "-v", rate])
-        _RESAMPLE_CACHE[key] = out if r.returncode == 0 else path
-    return _RESAMPLE_CACHE[key]
-
-
-def pesq(ref, deg, mode):
-    if not ref or not os.path.exists(ref) or not os.path.exists(deg):
-        return None, None
-    r = run([sys.executable, os.path.join(os.path.dirname(__file__), "score.py"), ref, deg, "--mode", mode])
-    if r.returncode != 0:
-        return None, None
-    vals = {}
-    for line in r.stdout.splitlines():
-        if "," in line:
-            k, v = line.split(",", 1)
-            vals[k] = v
-    return vals.get(f"pesq_{mode}"), vals.get("stoi")
+    def at(self, path, rate):
+        key = (path, rate)
+        if key not in self.cache:
+            out = f"{path}.{rate}.wav"
+            r = run(["sox", path, "-b", "16", "-r", rate, out, "rate", "-v", rate])
+            self.cache[key] = out if r.returncode == 0 else path
+        return self.cache[key]
 
 
 def source_rate(path):
@@ -143,30 +94,25 @@ def source_rate(path):
         return 48000
 
 
-def trim_and_encode(src, dst_base, tmp_dir):
-    """trim the shared segment, normalise loudness, write mp3 + wav
-
-    The WAV keeps the source sample rate so it is the exact decoded output; the MP3
-    is upsampled to 48 kHz because a lossy layer at 192 kbit/s on top of an 8 kHz
-    voice codec cannot change what the voice codec did.
-    """
+def clip(src, dst_base):
+    """8 second clip, loudness matched, MP3 for the player."""
     mp3 = dst_base + ".mp3"
-    wav = dst_base + ".wav"
+    tmp = dst_base + ".wav"
     rate = source_rate(src)
-    # loudnorm runs at 192 kHz internally, so the output rate has to be pinned
     r = run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", src,
              "-ss", CLIP_START, "-t", CLIP_LEN,
              "-af", f"loudnorm=I={TARGET_LUFS}:TP=-2:LRA=7",
-             "-ar", str(rate), "-c:a", "pcm_s16le", wav])
+             "-ar", str(rate), "-c:a", "pcm_s16le", tmp])
     if r.returncode != 0:
-        print(f"  ffmpeg wav failed for {src}: {r.stderr[:200]}")
-        return False
-    r = run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", wav,
+        print(f"  ffmpeg failed for {src}: {r.stderr[:160]}")
+        return None
+    r = run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", tmp,
              "-ar", "48000", "-c:a", "libmp3lame", "-b:a", MP3_BITRATE, mp3])
+    os.unlink(tmp)
     if r.returncode != 0:
-        print(f"  ffmpeg mp3 failed for {src}: {r.stderr[:200]}")
-        return False
-    return True
+        print(f"  mp3 failed for {src}: {r.stderr[:160]}")
+        return None
+    return mp3
 
 
 def main():
@@ -176,91 +122,121 @@ def main():
     args = ap.parse_args()
 
     here = pathlib.Path(__file__).resolve().parent
-    preview = pathlib.Path(args.preview).resolve() if args.preview else here.parent
+    root = pathlib.Path(args.preview).resolve() if args.preview else here.parent
     site = pathlib.Path(args.site).resolve() if args.site else here.parent
-    clips = site / "assets" / "clips"
-    clips.mkdir(parents=True, exist_ok=True)
+    clips_dir = site / "assets" / "clips"
+    clips_dir.mkdir(parents=True, exist_ok=True)
 
-    os.chdir(preview)
+    os.chdir(root)
+    resampler = Resampler()
 
-    items = []
-    for vid, label, src, ref, mode, group, note in VARIANTS:
-        if not os.path.exists(src):
-            print(f"skip {vid}: missing {src}")
+    items_out = []
+    per_config = {}
+    missing = []
+
+    for item in ITEMS:
+        ref16 = f"corpus/items/{item}_ref16.wav"
+        if not os.path.exists(ref16):
+            missing.append(ref16)
             continue
-        base = clips / vid
-        if not trim_and_encode(src, str(base), str(clips)):
-            continue
-        p, s = pesq(ref, at_rate(src, mode), mode) if ref and mode else (None, None)
-        meta = read_csv(src[:-4] + ".csv")
-        items.append({
-            "id": vid, "label": label, "group": group, "note": note,
-            "mp3": f"assets/clips/{vid}.mp3", "wav": f"assets/clips/{vid}.wav",
-            "sourceRate": "8000",
-            "pesq": p, "stoi": s,
-            "wireKbps": meta.get("bitrate_kbps_wire"),
-            "payloadKbps": meta.get("bitrate_kbps_payload"),
-            "packetsPerSecond": (round(int(meta["packets"]) / float(meta["seconds"]), 1)
-                                 if meta.get("packets") and meta.get("seconds") else None),
-            "maxPacketBytes": meta.get("max_packet_bytes"),
-        })
-        print(f"  {vid}: pesq={p} stoi={s} wire={meta.get('bitrate_kbps_wire')}")
 
-    wideband = []
-    sample = next((s for s in WIDEBAND_SAMPLES if os.path.exists(f"corpus/{s}_ref16.wav")), None)
-    print(f"  wideband corpus: {sample or 'none found'}")
-    if sample:
-        for vid, label, src_t, ref_t, mode, group, note in WIDEBAND:
-            src = src_t.format(name=sample)
-            ref = ref_t.format(name=sample) if ref_t else None
+        text = ""
+        if os.path.exists(f"corpus/items/{item}.txt"):
+            lines = [l.strip() for l in open(f"corpus/items/{item}.txt") if l.strip()]
+            text = lines[1] if len(lines) > 1 else ""
+
+        item_clips = {}
+        for cid, label, band, group, note in CONFIGS:
+            src = ref16 if cid == "ref16" else f"out/{item}_{cid}.wav"
             if not os.path.exists(src):
-                print(f"skip wideband {vid}: missing {src}")
+                missing.append(src)
                 continue
-            base = clips / vid
-            if not trim_and_encode(src, str(base), str(clips)):
-                continue
-            p, s = pesq(ref, at_rate(src, mode), mode) if ref and mode else (None, None)
-            meta = read_csv(src[:-4] + ".csv")
-            wideband.append({
-                "id": vid, "label": label, "group": group, "note": note,
-                "mp3": f"assets/clips/{vid}.mp3", "wav": f"assets/clips/{vid}.wav",
-                "sourceRate": "16000" if "16k" in vid else "48000",
-                "pesq": p, "stoi": s,
-                "wireKbps": meta.get("bitrate_kbps_wire"),
-                "payloadKbps": meta.get("bitrate_kbps_payload"),
-                "packetsPerSecond": (round(int(meta["packets"]) / float(meta["seconds"]), 1)
-                                     if meta.get("packets") and meta.get("seconds") else None),
-                "maxPacketBytes": meta.get("max_packet_bytes"),
-            })
-            print(f"  wideband {vid}: pesq={p} wire={meta.get('bitrate_kbps_wire')}")
 
-    if not items:
+            dst = clips_dir / f"{item}_{cid}"
+            mp3 = clip(src, str(dst))
+            if not mp3:
+                continue
+            item_clips[cid] = {"mp3": f"assets/clips/{item}_{cid}.mp3", "wav": None}
+
+            if cid == "ref16":
+                continue
+
+            csv_meta = read_csv(f"out/{item}_{cid}.csv")
+            score_src = resampler.at(src, RESAMPLE["wb"])
+            r = run([sys.executable, str(here / "score.py"), ref16, score_src, "--mode", "wb"])
+            pesq = stoi = None
+            for line in r.stdout.splitlines():
+                if line.startswith("pesq_wb,"):
+                    pesq = float(line.split(",")[1])
+                elif line.startswith("stoi,"):
+                    stoi = float(line.split(",")[1])
+
+            per_config.setdefault(cid, []).append({
+                "item": item,
+                "pesq": pesq,
+                "stoi": stoi,
+                "wire": float(csv_meta["bitrate_kbps_wire"]) if csv_meta.get("bitrate_kbps_wire") else None,
+                "packetsPerSecond": (round(int(csv_meta["packets"]) / float(csv_meta["seconds"]), 1)
+                                     if csv_meta.get("packets") and csv_meta.get("seconds") else None),
+                "maxPacket": int(csv_meta["max_packet_bytes"]) if csv_meta.get("max_packet_bytes") else None,
+            })
+
+        items_out.append({
+            "id": item,
+            "label": f"sample {item[-1]}",
+            "text": text,
+            "clips": item_clips,
+        })
+        print(f"  {item}: {len(item_clips)} clips  {text[:52]}")
+
+    if not items_out or not per_config:
         sys.exit(
-            "no measurement outputs found, so data.json was left untouched.\n"
-            "\n"
+            "no measurement outputs found, so data.json was left untouched.\n\n"
             "The page ships with data.json and assets/clips already committed; rebuilding them\n"
-            "is only needed when you re-measure. To do that:\n"
-            "\n"
+            "is only needed when you re-measure. To do that:\n\n"
             "  DECOMP=/path/to/wowdecomp ./tools/build.sh\n"
-            "  ./tools/run_preview.sh\n"
-            "  ./tools/run_wideband.sh corpus/librispeech_16k.wav\n"
-            "  ./tools/build_site.py\n"
-            "\n"
-            "Expected inputs: corpus/<name>_ref8.wav, corpus/<name>_ref16.wav and the matching\n"
-            "out/<name>_*.wav + out/<name>_*.csv produced by the two run scripts."
+            "  ./tools/run_matrix.sh\n"
+            "  ./tools/build_site.py\n\n"
+            "Expected inputs: corpus/items/<item>_ref16.wav and the out/<item>_*.wav +\n"
+            "out/<item>_*.csv files that run_matrix.sh produces.\n"
+            f"Missing, for example: {missing[0] if missing else 'everything'}"
         )
 
+    configs_out = []
+    for cid, label, band, group, note in CONFIGS:
+        rows = per_config.get(cid, [])
+        if not rows and cid != "ref16":
+            continue
+        pesqs = [r["pesq"] for r in rows if r["pesq"] is not None]
+        stois = [r["stoi"] for r in rows if r["stoi"] is not None]
+        wires = [r["wire"] for r in rows if r["wire"] is not None]
+        maxp = [r["maxPacket"] for r in rows if r["maxPacket"] is not None]
+        pps = [r["packetsPerSecond"] for r in rows if r["packetsPerSecond"] is not None]
+        configs_out.append({
+            "id": cid, "label": label, "band": band, "group": group, "note": note,
+            "pesq": round(sum(pesqs) / len(pesqs), 2) if pesqs else None,
+            "pesqMin": round(min(pesqs), 2) if pesqs else None,
+            "pesqMax": round(max(pesqs), 2) if pesqs else None,
+            "stoi": round(sum(stois) / len(stois), 3) if stois else None,
+            "wireKbps": round(sum(wires) / len(wires), 1) if wires else None,
+            "packetsPerSecond": (sorted(set(pps))[0] if pps else None),
+            "maxPacketBytes": max(maxp) if maxp else None,
+        })
+
     data = {
-        "generated": subprocess.run(["date", "-u", "+%Y-%m-%d"], capture_output=True, text=True).stdout.strip(),
-        "narrowband": items,
-        "wideband": wideband,
+        "generated": run(["date", "-u", "+%Y-%m-%d"]).stdout.strip(),
         "deliveryCodec": f"MP3 {MP3_BITRATE} mono, {TARGET_LUFS} LUFS",
-        "corpus": "Open Speech Repository, American English, 8 kHz (voiptroubleshooter.com)",
+        "corpus": "LibriSpeech dev-clean, 16 kHz, CC BY 4.0",
+        "items": items_out,
+        "configs": configs_out,
     }
+
     tmp = site / "data.json.tmp"
     tmp.write_text(json.dumps(data, indent=2))
     os.replace(tmp, site / "data.json")
-    print(f"wrote {site / 'data.json'} ({len(items)} narrowband, {len(wideband)} wideband clips)")
+    print(f"wrote {site / 'data.json'}: {len(items_out)} samples, {len(configs_out)} configurations")
+    if missing:
+        print(f"note: {len(missing)} expected inputs were missing, first: {missing[0]}")
 
 
 if __name__ == "__main__":

@@ -1,128 +1,108 @@
-# Spirit IPMR vs Opus — offline measurement report
+# Spirit IPMR vs Opus — measurement report
 
 Everything here was produced without touching the game: the 3.3.5a codec
-(`ComSat/SPIRIT`, taken read-only from `/home/pc/wd/client/wowdecomp`) was compiled
-as a standalone library, driven exactly the way `ComSatSoundCODEC.cpp` drives it,
-and compared against Opus on speech.
+(`ComSat/SPIRIT`, read from a decompiled client checkout and never modified) was compiled
+as a standalone library, driven exactly the way `ComSatSoundCODEC.cpp` drives it, and
+compared against Opus on speech.
 
-Reproduce with `./build.sh`, `./run_preview.sh`, `./run_wideband.sh` in this directory.
+Reproduce with `./tools/build.sh`, `./tools/run_matrix.sh`, `./tools/build_site.py`.
 
 ## Corpus
 
-| source | rate | length | why |
-|---|---|---|---|
-| `corpus/OSR_us_000_0010_8k.wav`, `..._0016_8k.wav` | 8 kHz | 33 s, 35 s | real recordings, published for VoIP codec testing |
-| `corpus/tts*_ref*.wav` | 22 kHz source | 6 s each | speech-shaped filler only, see the caveat on band-limited material |
-| `corpus/librispeech_16k.wav` | 16 kHz | 12 s | LibriSpeech dev-clean (CC BY 4.0), standard wideband test material |
+Four sentences from **LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12), 16 kHz, cut to
+ten seconds each in `corpus/items/`. The point of a 16 kHz source is that the same audio
+can be pushed through an 8 kHz pipeline and a 16 kHz pipeline, so both can be scored
+against one reference.
 
-PESQ (ITU-T P.862) and STOI are computed against the 8 kHz reference for narrowband
-comparisons, and against a 16 kHz reference for wideband comparisons.
+One speaker reads audiobook prose. That is enough to hear codec artifacts and keeps the
+numbers reproducible without anyone's microphone, but it is not a raid: no headset
+microphone, no room, no four talkers at once.
 
 ## How the old codec behaves, measured
 
-The client encodes one 100 ms block per packet: five 20 ms subframes pushed into one
-bit stream (`ComSatSoundCODEC.cpp:73`), and decodes by looping while
-`bits - consumed >= 72` (`:131`). Bits per 100 ms block came out at **395–851 on
-speech and up to 960 on loud material**, i.e. the variable-rate range the codec was
-built for.
+The client encodes one 100 ms block per packet: five 20 ms subframes pushed into one bit
+stream (`ComSatSoundCODEC.cpp:73`), and decodes by looping while `bits - consumed >= 72`
+(`:131`).
 
 | measurement | value |
 |---|---|
-| payload bitrate on speech | 6.0–6.6 kbit/s |
-| wire bitrate (7-byte client header + UDP/IPv4) | 8.8–9.4 kbit/s |
+| bits per 100 ms frame on speech | 395–887 |
+| payload bitrate | 6.2–6.3 kbit/s |
+| wire bitrate (7-byte client header + UDP/IPv4) | 9.0 kbit/s |
 | packets per second | 10 |
-| encode CPU | 275–360 µs per 100 ms block |
+| largest packet | 114 B |
+| encode CPU | 280–360 µs per 100 ms block |
 | decode CPU | 42–52 µs per 100 ms block |
-| packet loss behaviour | no concealment at all: the client never calls the codec with the `lost` flag, a missing packet is an empty jitter slot played as silence |
+| packet loss behaviour | no concealment: the client never calls the codec with the `lost` flag, a missing packet is an empty jitter slot played as silence |
 
-That last line matters more than it looks: at 5 % loss the codec loses about
-0.5 MOS purely from silence gaps.
+## Results
 
-## Narrowband comparison (real speech, 8 kHz in, 8 kHz out)
+PESQ-WB (ITU-T P.862.2) against the uncompressed 16 kHz original, averaged over the four
+samples. Scoring on the wideband scale is deliberate: it is the only scale on which an
+8 kHz pipeline and a 16 kHz pipeline mean the same thing, and it makes the ceiling visible.
+Wire bitrate includes the 7-byte client header plus UDP and IPv4 overhead.
 
-PESQ-LQO 1.0–4.5, higher is better. 5 % loss means every 20th packet dropped.
+| configuration | band | wire kbit/s | pkt/s | max packet | PESQ-WB | STOI |
+|---|---|---|---|---|---|---|
+| 8 kHz ceiling (reference cut to 4 kHz) | 8 kHz | – | – | – | 2.58 | 0.994 |
+| today: Spirit IPMR, 100 ms | 8 kHz | 9.0 | 10 | 114 B | 1.56 | 0.856 |
+| Opus 9.6 k, 100 ms | 8 kHz | 11.2 | 10 | 118 B | 2.09 | 0.885 |
+| Opus 9.6 k, 60 ms | 8 kHz | 13.6 | 17 | 90 B | 2.26 | 0.895 |
+| Opus 9.6 k, 100 ms | 16 kHz | 11.3 | 10 | 119 B | 2.70 | 0.858 |
+| Opus 16 k, 100 ms | 16 kHz | 16.9 | 10 | 197 B | 4.05 | 0.904 |
+| Opus 16 k, 60 ms | 16 kHz | 20.4 | 17 | 164 B | 4.27 | 0.911 |
+| Opus 24 k, 60 ms | 16 kHz | 28.4 | 17 | 228 B | 4.45 | 0.917 |
+| Opus 32 k, 60 ms | 16 kHz | 36.3 | 17 | 299 B | 4.48 | 0.920 |
 
-| configuration | wire kbit/s | pkt/s | max packet | PESQ clean | PESQ 5 % loss |
-|---|---|---|---|---|---|
-| **today: IPMR** | 9.2 | 10 | 107 B | **2.69** | 2.22 |
-| Opus NB 9.6 k, 100 ms packets | 10.8 | 10 | 117 B | **3.91** | 2.91 |
-| Opus NB 9.6 k, 60 ms packets | 13.1 | 17 | 91 B | **4.16** | 3.12 |
-| Opus NB 9.6 k, 40 ms packets | 15.5 | 25 | 65 B | 4.14 | 2.90 |
-| Opus NB 9.6 k, 20 ms packets | 22.5 | 50 | 34 B | 4.13 | 3.38 |
-| Opus NB 6 k, 20 ms packets | 19.2 | 50 | 26 B | 3.22 | — |
-| Opus NB 12 k, 20 ms packets | 25.1 | 50 | 42 B | 4.31 | — |
-| Opus NB 15 k, 20 ms packets | 28.3 | 50 | 51 B | 4.40 | — |
+Packet loss, one datagram in twenty, with in-band FEC where the codec has it:
 
-Three findings:
+| configuration | band | wire kbit/s | PESQ-WB |
+|---|---|---|---|
+| today: Spirit IPMR | 8 kHz | 9.0 | 1.44 |
+| Opus 9.6 k, 60 ms, FEC | 8 kHz | 13.7 | 1.86 |
+| Opus 16 k, 60 ms, FEC | 16 kHz | 20.4 | 2.82 |
 
-1. **Codec-only swap is worth much more than the earlier estimate.** Opus narrowband
-   at 9.6 kbit/s in 100 ms packets scores 3.91 against 2.69 for IPMR, and its largest
-   packet is 117 bytes — inside both hard caps of the current pipeline (124 bytes in
-   `LocalTalker::Frame::m_data`, 128 bytes in `VoicePacket::m_data`). This needs no
-   framing change, no I/O change, just the codec.
-2. **Packet size choice is a bandwidth decision, not a detail.** 50 packets per second
-   spends 14 kbit/s on the 7-byte client header plus UDP/IPv4 before any audio. At
-   10 packets per second the same audio costs 10.8 kbit/s on the wire.
-3. **Packet loss is where Opus wins hardest in practice.** IPMR drops to 2.22 at 5 %
-   loss because it has no concealment in this client; Opus with in-band FEC keeps 3.12
-   at 60 ms packets, and 3.38 at 20 ms packets.
+Narrowband cross-check: scored only inside 4 kHz, where the wideband ceiling does not
+apply, the same runs are 2.89 (IPMR), 3.95 (Opus 9.6 k, 100 ms) and 4.22 (Opus 9.6 k,
+60 ms). That is the "same band, better codec" view; the table above is the "what does
+bandwidth buy" view.
 
-## Wideband: 16 kHz instead of 8 kHz
+### What the numbers say
 
-The 8 kHz corpus cannot show this part: it has no content above 4 kHz, so a wideband
-codec has nothing extra to preserve. The wideband runs therefore use **LibriSpeech**
-dev-clean (16 kHz, CC BY 4.0), two utterances concatenated into a 12 second sample.
-
-Every candidate is scored with PESQ-WB against the same 16 kHz reference, including the
-narrowband ones after upsampling. The ceiling row is the uncompressed reference cut to
-4 kHz and upsampled: whatever the codec, an 8 kHz pipeline cannot score above it.
-
-| configuration | PESQ-WB | STOI | payload kbit/s | wire kbit/s | max packet |
-|---|---|---|---|---|---|
-| 8 kHz ceiling (band-limited reference) | 2.22 | 0.992 | – | – | – |
-| today: IPMR, 8 kHz, 100 ms | 1.37 | 0.843 | 6.3 | 9.1 | 111 B |
-| Opus 9.6 k, 8 kHz, 100 ms | 1.82 | 0.880 | 8.5 | 11.3 | 117 B |
-| Opus 9.6 k, 8 kHz, 60 ms | 1.94 | 0.890 | 9.1 | 13.7 | 84 B |
-| Opus 16 k, 16 kHz, 60 ms | 4.27 | 0.907 | 15.8 | 20.5 | 153 B |
-| Opus 24 k, 16 kHz, 60 ms | 4.47 | 0.916 | 23.9 | 28.5 | 219 B |
-| Opus 32 k, 16 kHz, 60 ms | 4.51 | 0.918 | 31.9 | 36.5 | 295 B |
-
-Two conclusions:
-
-1. Codec quality inside 8 kHz is close to free: Opus at 9.6 kbit/s recovers most of what
-   IPMR throws away (1.37 → 1.94 on this scale, 2.69 → 4.16 on the narrowband scale) for
-   about 1.5 kbit/s more.
-2. Bandwidth is the bigger lever. Wideband jumps to 4.27 at 20.5 kbit/s. The 153 byte
-   largest packet no longer fits the client's 124-byte frame cap, so this is the step that
-   needs the framing and time-base hooks described in the plan, not just the codec hook.
+1. **The ceiling row bounds everything built on 8 kHz.** 2.58 is the best an 8 kHz
+   pipeline can score, because nothing above 4 kHz was ever captured. Any plan that keeps
+   8 kHz inherits that limit.
+2. **Codec quality inside 8 kHz is nearly free.** Opus at 9.6 kbit/s takes 1.56 → 2.26
+   for about 4 kbit/s more wire bandwidth, and the 100 ms configuration (118 B) fits the
+   client's 124-byte frame cap without touching the framing.
+3. **Wideband is the real step, and it is cheap at the low end.** 16 kHz at 9.6 kbit/s
+   scores 2.70 in a 119-byte packet: same cap, same packet rate, no framing work. The
+   step to 4.05–4.45 needs 16–24 kbit/s, which is 164–228 bytes per packet and therefore
+   the framing and time-base hooks.
+4. **Packet-loss robustness is a separate upgrade.** Today's client drops to 1.44 at 5 %
+   loss because it has no concealment at all; Opus with FEC keeps 1.86 at 8 kHz and 2.82
+   at 16 kHz.
 
 ## Caveats
 
-- PESQ scores one clean signal against one degraded signal. It cannot say anything
-  about four simultaneous talkers, ducking, or how the game's own mixing sounds.
-- CPU numbers are from this machine, one core, and only compare the two codecs
+- PESQ scores one clean signal against one degraded signal. It cannot say anything about
+  four simultaneous talkers, ducking, or how the game's own mixing sounds.
+- CPU numbers are from one machine and one core, and only compare the two codecs
   relative to each other.
-- The corpus is clean studio-ish speech plus some TTS. Game voice chat has keyboard
-  noise, room tone and a headset microphone; the ranking of the codecs will not flip,
-  but the absolute MOS will drop for all of them.
-- The simulated loss drops packets in a fixed pattern. Real loss is bursty, which
-  penalises longer packets more than this test does.
-
-## Listening in a browser
-
-`site/` holds a static page that plays these results: blind A/B switching on the same
-snippet, a packet-loss section, the metric tables, and a wideband section that appears
-once a real 16 kHz recording has been measured. See `site/README.md` for hosting.
-
-```
-./site/serve.sh        # http://127.0.0.1:8788/
-```
+- The corpus is clean read speech from one speaker. The ranking of the codecs will not
+  flip on real voice chat, but every absolute score will drop.
+- Simulated loss drops packets in a fixed pattern; real loss is bursty, which penalises
+  longer packets more than this test does.
+- The MP3 in the page is a delivery layer for listening, not a measurement input: all
+  numbers come from the decoded WAVs.
 
 ## Files
 
-- `src/spirit_probe.cpp` — IPMR encode/decode driven exactly like the client, WAV in/out, timing, loss simulation
-- `src/opus_pipeline.py` — Opus through libopus via ctypes, per-packet encode/decode, FEC and loss simulation
-- `src/wav_metrics.cpp` — delay-aligned SNR, segmental SNR, log-spectral distance, band energy
-- `src/score.py` — PESQ and STOI wrappers
-- `out/` — every decoded WAV, CSV per run, `out/spectro/` spectrograms, `out/listen/` a small A/B set
-- `site/` — the comparison page (`index.html`, `app.js`, `styles.css`, `data.json`, `assets/clips/`), built by `site/build_site.py`
+- `tools/spirit_probe.cpp` — IPMR encode/decode driven exactly like the client, WAV in/out, timing, loss simulation
+- `tools/opus_pipeline.py` — Opus through libopus via ctypes, per-packet encode/decode, FEC and loss simulation
+- `tools/wav_metrics.cpp` — delay-aligned SNR, segmental SNR, log-spectral distance, band energy
+- `tools/score.py` — PESQ and STOI wrappers
+- `tools/run_matrix.sh` — every configuration over every sample
+- `tools/build_site.py` — clips, PESQ table and `data.json` for the page
+- `corpus/items/` — the four 16 kHz samples (regenerated from LibriSpeech, not committed)
+- `assets/clips/` — the page's clips

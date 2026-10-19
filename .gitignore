@@ -1,3 +1,10 @@
-corpus/
+# measurement outputs and intermediate scratch
 out/
 tools/build/
+
+# the four 16 kHz source samples are tracked so the measurements re-run without
+# downloading a corpus; the 8 kHz versions and resampler scratch are generated
+corpus/*
+!corpus/items/
+!corpus/items/*_ref16.wav
+!corpus/items/*.txt

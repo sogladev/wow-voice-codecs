@@ -1,309 +1,427 @@
 {
   "generated": "2026-10-19",
-  "narrowband": [
+  "deliveryCodec": "MP3 128k mono, -20 LUFS",
+  "corpus": "LibriSpeech dev-clean, 16 kHz, CC BY 4.0",
+  "items": [
     {
-      "id": "ref8",
-      "label": "original (not compressed)",
-      "group": "nb",
-      "note": "The recording the others are compared against. 8 kHz, the same band today's codec is limited to.",
-      "mp3": "assets/clips/ref8.mp3",
-      "wav": "assets/clips/ref8.wav",
-      "sourceRate": "8000",
+      "id": "item1",
+      "label": "sample 1",
+      "text": "HE TELLS US THAT AT THIS FESTIVE SEASON OF THE YEAR WITH CHRISTMAS AND ROAST BEEF LOOMING BEFORE US SIMILES DRAWN FROM EATING AND ITS RESULTS OCCUR MOST READILY TO THE MIND",
+      "clips": {
+        "ref16": {
+          "mp3": "assets/clips/item1_ref16.mp3",
+          "wav": null
+        },
+        "ceiling8k": {
+          "mp3": "assets/clips/item1_ceiling8k.mp3",
+          "wav": null
+        },
+        "ipmr": {
+          "mp3": "assets/clips/item1_ipmr.mp3",
+          "wav": null
+        },
+        "nb96_100": {
+          "mp3": "assets/clips/item1_nb96_100.mp3",
+          "wav": null
+        },
+        "nb96_60": {
+          "mp3": "assets/clips/item1_nb96_60.mp3",
+          "wav": null
+        },
+        "wb96_100": {
+          "mp3": "assets/clips/item1_wb96_100.mp3",
+          "wav": null
+        },
+        "wb16_100": {
+          "mp3": "assets/clips/item1_wb16_100.mp3",
+          "wav": null
+        },
+        "wb16_60": {
+          "mp3": "assets/clips/item1_wb16_60.mp3",
+          "wav": null
+        },
+        "wb24_60": {
+          "mp3": "assets/clips/item1_wb24_60.mp3",
+          "wav": null
+        },
+        "wb32_60": {
+          "mp3": "assets/clips/item1_wb32_60.mp3",
+          "wav": null
+        },
+        "ipmr_loss": {
+          "mp3": "assets/clips/item1_ipmr_loss.mp3",
+          "wav": null
+        },
+        "nb96_60_loss": {
+          "mp3": "assets/clips/item1_nb96_60_loss.mp3",
+          "wav": null
+        },
+        "wb16_60_loss": {
+          "mp3": "assets/clips/item1_wb16_60_loss.mp3",
+          "wav": null
+        }
+      }
+    },
+    {
+      "id": "item2",
+      "label": "sample 2",
+      "text": "LINNELL'S PICTURES ARE A SORT OF UP GUARDS AND AT EM PAINTINGS AND MASON'S EXQUISITE IDYLLS ARE AS NATIONAL AS A JINGO POEM MISTER BIRKET FOSTER'S LANDSCAPES SMILE AT ONE MUCH IN THE SAME WAY THAT MISTER CARKER USED TO FLASH HIS TEETH AND MISTER JOHN COLLIER GIVES HIS SITTER A CHEERFUL SLAP ON THE BACK BEFORE HE SAYS LIKE A SHAMPOOER IN A TURKISH BATH NEXT MAN",
+      "clips": {
+        "ref16": {
+          "mp3": "assets/clips/item2_ref16.mp3",
+          "wav": null
+        },
+        "ceiling8k": {
+          "mp3": "assets/clips/item2_ceiling8k.mp3",
+          "wav": null
+        },
+        "ipmr": {
+          "mp3": "assets/clips/item2_ipmr.mp3",
+          "wav": null
+        },
+        "nb96_100": {
+          "mp3": "assets/clips/item2_nb96_100.mp3",
+          "wav": null
+        },
+        "nb96_60": {
+          "mp3": "assets/clips/item2_nb96_60.mp3",
+          "wav": null
+        },
+        "wb96_100": {
+          "mp3": "assets/clips/item2_wb96_100.mp3",
+          "wav": null
+        },
+        "wb16_100": {
+          "mp3": "assets/clips/item2_wb16_100.mp3",
+          "wav": null
+        },
+        "wb16_60": {
+          "mp3": "assets/clips/item2_wb16_60.mp3",
+          "wav": null
+        },
+        "wb24_60": {
+          "mp3": "assets/clips/item2_wb24_60.mp3",
+          "wav": null
+        },
+        "wb32_60": {
+          "mp3": "assets/clips/item2_wb32_60.mp3",
+          "wav": null
+        },
+        "ipmr_loss": {
+          "mp3": "assets/clips/item2_ipmr_loss.mp3",
+          "wav": null
+        },
+        "nb96_60_loss": {
+          "mp3": "assets/clips/item2_nb96_60_loss.mp3",
+          "wav": null
+        },
+        "wb16_60_loss": {
+          "mp3": "assets/clips/item2_wb16_60_loss.mp3",
+          "wav": null
+        }
+      }
+    },
+    {
+      "id": "item3",
+      "label": "sample 3",
+      "text": "HE LAMENTS MOST BITTERLY THE DIVORCE THAT HAS BEEN MADE BETWEEN DECORATIVE ART AND WHAT WE USUALLY CALL PICTURES MAKES THE CUSTOMARY APPEAL TO THE LAST JUDGMENT AND REMINDS US THAT IN THE GREAT DAYS OF ART MICHAEL ANGELO WAS THE FURNISHING UPHOLSTERER",
+      "clips": {
+        "ref16": {
+          "mp3": "assets/clips/item3_ref16.mp3",
+          "wav": null
+        },
+        "ceiling8k": {
+          "mp3": "assets/clips/item3_ceiling8k.mp3",
+          "wav": null
+        },
+        "ipmr": {
+          "mp3": "assets/clips/item3_ipmr.mp3",
+          "wav": null
+        },
+        "nb96_100": {
+          "mp3": "assets/clips/item3_nb96_100.mp3",
+          "wav": null
+        },
+        "nb96_60": {
+          "mp3": "assets/clips/item3_nb96_60.mp3",
+          "wav": null
+        },
+        "wb96_100": {
+          "mp3": "assets/clips/item3_wb96_100.mp3",
+          "wav": null
+        },
+        "wb16_100": {
+          "mp3": "assets/clips/item3_wb16_100.mp3",
+          "wav": null
+        },
+        "wb16_60": {
+          "mp3": "assets/clips/item3_wb16_60.mp3",
+          "wav": null
+        },
+        "wb24_60": {
+          "mp3": "assets/clips/item3_wb24_60.mp3",
+          "wav": null
+        },
+        "wb32_60": {
+          "mp3": "assets/clips/item3_wb32_60.mp3",
+          "wav": null
+        },
+        "ipmr_loss": {
+          "mp3": "assets/clips/item3_ipmr_loss.mp3",
+          "wav": null
+        },
+        "nb96_60_loss": {
+          "mp3": "assets/clips/item3_nb96_60_loss.mp3",
+          "wav": null
+        },
+        "wb16_60_loss": {
+          "mp3": "assets/clips/item3_wb16_60_loss.mp3",
+          "wav": null
+        }
+      }
+    },
+    {
+      "id": "item4",
+      "label": "sample 4",
+      "text": "IN FACT HE IS QUITE SEVERE ON MISTER RUSKIN FOR NOT RECOGNISING THAT A PICTURE SHOULD DENOTE THE FRAILTY OF MAN AND REMARKS WITH PLEASING COURTESY AND FELICITOUS GRACE THAT MANY PHASES OF FEELING",
+      "clips": {
+        "ref16": {
+          "mp3": "assets/clips/item4_ref16.mp3",
+          "wav": null
+        },
+        "ceiling8k": {
+          "mp3": "assets/clips/item4_ceiling8k.mp3",
+          "wav": null
+        },
+        "ipmr": {
+          "mp3": "assets/clips/item4_ipmr.mp3",
+          "wav": null
+        },
+        "nb96_100": {
+          "mp3": "assets/clips/item4_nb96_100.mp3",
+          "wav": null
+        },
+        "nb96_60": {
+          "mp3": "assets/clips/item4_nb96_60.mp3",
+          "wav": null
+        },
+        "wb96_100": {
+          "mp3": "assets/clips/item4_wb96_100.mp3",
+          "wav": null
+        },
+        "wb16_100": {
+          "mp3": "assets/clips/item4_wb16_100.mp3",
+          "wav": null
+        },
+        "wb16_60": {
+          "mp3": "assets/clips/item4_wb16_60.mp3",
+          "wav": null
+        },
+        "wb24_60": {
+          "mp3": "assets/clips/item4_wb24_60.mp3",
+          "wav": null
+        },
+        "wb32_60": {
+          "mp3": "assets/clips/item4_wb32_60.mp3",
+          "wav": null
+        },
+        "ipmr_loss": {
+          "mp3": "assets/clips/item4_ipmr_loss.mp3",
+          "wav": null
+        },
+        "nb96_60_loss": {
+          "mp3": "assets/clips/item4_nb96_60_loss.mp3",
+          "wav": null
+        },
+        "wb16_60_loss": {
+          "mp3": "assets/clips/item4_wb16_60_loss.mp3",
+          "wav": null
+        }
+      }
+    }
+  ],
+  "configs": [
+    {
+      "id": "ref16",
+      "label": "original, 16 kHz",
+      "band": "16 kHz",
+      "group": "reference",
+      "note": "The uncompressed recording everything else is compared against.",
       "pesq": null,
+      "pesqMin": null,
+      "pesqMax": null,
       "stoi": null,
       "wireKbps": null,
-      "payloadKbps": null,
+      "packetsPerSecond": null,
+      "maxPacketBytes": null
+    },
+    {
+      "id": "ceiling8k",
+      "label": "8 kHz ceiling: the same audio limited to 4 kHz",
+      "band": "8 kHz",
+      "group": "reference",
+      "note": "Not a codec. The recording band-limited to 4 kHz and upsampled, which is the best any 8 kHz pipeline can ever sound. Compare the rows under it against this one to see what bandwidth costs.",
+      "pesq": 2.58,
+      "pesqMin": 2.0,
+      "pesqMax": 2.94,
+      "stoi": 0.994,
+      "wireKbps": null,
       "packetsPerSecond": null,
       "maxPacketBytes": null
     },
     {
       "id": "ipmr",
-      "label": "today: Spirit IPMR 6.4 kbit/s",
-      "group": "nb",
-      "note": "The 2007 codec, packetised exactly as the 3.3.5a client does: one 100 ms frame per datagram.",
-      "mp3": "assets/clips/ipmr.mp3",
-      "wav": "assets/clips/ipmr.wav",
-      "sourceRate": "8000",
-      "pesq": "2.688",
-      "stoi": "0.672",
-      "wireKbps": "9.15",
-      "payloadKbps": "6.35",
+      "label": "today: Spirit IPMR, 8 kHz, 100 ms packets",
+      "band": "8 kHz",
+      "group": "codec",
+      "note": "The 2007 codec, packetised exactly as the 3.3.5a client does: one 100 ms frame per datagram, 6.2 kbit/s of payload.",
+      "pesq": 1.56,
+      "pesqMin": 1.32,
+      "pesqMax": 1.71,
+      "stoi": 0.856,
+      "wireKbps": 9.0,
       "packetsPerSecond": 10.0,
-      "maxPacketBytes": "107"
+      "maxPacketBytes": 114
     },
     {
-      "id": "opus_nb_6k",
-      "label": "Opus 6 kbit/s, 20 ms",
-      "group": "nb",
-      "note": "Opus narrowband at the same bitrate as today, in small packets.",
-      "mp3": "assets/clips/opus_nb_6k.mp3",
-      "wav": "assets/clips/opus_nb_6k.wav",
-      "sourceRate": "8000",
-      "pesq": "3.218",
-      "stoi": "0.665",
-      "wireKbps": "19.17",
-      "payloadKbps": "5.17",
-      "packetsPerSecond": 50.0,
-      "maxPacketBytes": "25"
-    },
-    {
-      "id": "opus_nb_9k6_100",
-      "label": "Opus 9.6 kbit/s, 100 ms packets",
-      "group": "nb",
-      "note": "Opus narrowband in the same packet shape as today. Largest packet is 117 bytes, inside the client's 124-byte cap.",
-      "mp3": "assets/clips/opus_nb_9k6_100.mp3",
-      "wav": "assets/clips/opus_nb_9k6_100.wav",
-      "sourceRate": "8000",
-      "pesq": "3.907",
-      "stoi": "0.740",
-      "wireKbps": "10.83",
-      "payloadKbps": "8.03",
+      "id": "nb96_100",
+      "label": "Opus 9.6 kbit/s, 8 kHz, 100 ms packets",
+      "band": "8 kHz",
+      "group": "codec",
+      "note": "Opus narrowband in today's packet shape. Still 8 kHz, so it cannot pass the ceiling above.",
+      "pesq": 2.09,
+      "pesqMin": 1.67,
+      "pesqMax": 2.41,
+      "stoi": 0.885,
+      "wireKbps": 11.2,
       "packetsPerSecond": 10.0,
-      "maxPacketBytes": "117"
+      "maxPacketBytes": 118
     },
     {
-      "id": "opus_nb_9k6_60",
-      "label": "Opus 9.6 kbit/s, 60 ms packets",
-      "group": "nb",
-      "note": "The best measured balance: 13.1 kbit/s on the wire for a PESQ of 4.16.",
-      "mp3": "assets/clips/opus_nb_9k6_60.mp3",
-      "wav": "assets/clips/opus_nb_9k6_60.wav",
-      "sourceRate": "8000",
-      "pesq": "4.157",
-      "stoi": "0.746",
-      "wireKbps": "13.07",
-      "payloadKbps": "8.39",
+      "id": "nb96_60",
+      "label": "Opus 9.6 kbit/s, 8 kHz, 60 ms packets",
+      "band": "8 kHz",
+      "group": "codec",
+      "note": "Opus narrowband with shorter packets: better under loss, more per-packet overhead.",
+      "pesq": 2.26,
+      "pesqMin": 1.76,
+      "pesqMax": 2.66,
+      "stoi": 0.895,
+      "wireKbps": 13.6,
       "packetsPerSecond": 16.7,
-      "maxPacketBytes": "91"
+      "maxPacketBytes": 90
     },
     {
-      "id": "opus_nb_9k6_20",
-      "label": "Opus 9.6 kbit/s, 20 ms packets",
-      "group": "nb",
-      "note": "Same audio in small packets. Best loss behaviour, but the per-packet overhead doubles the wire cost.",
-      "mp3": "assets/clips/opus_nb_9k6_20.mp3",
-      "wav": "assets/clips/opus_nb_9k6_20.wav",
-      "sourceRate": "8000",
-      "pesq": "4.134",
-      "stoi": "0.743",
-      "wireKbps": "22.51",
-      "payloadKbps": "8.51",
-      "packetsPerSecond": 50.0,
-      "maxPacketBytes": "34"
+      "id": "wb96_100",
+      "label": "Opus 9.6 kbit/s, 16 kHz, 100 ms packets",
+      "band": "16 kHz",
+      "group": "codec",
+      "note": "Wideband at today's bitrate. Its largest packet is 118 bytes, inside the client's 124-byte frame cap.",
+      "pesq": 2.7,
+      "pesqMin": 2.64,
+      "pesqMax": 2.79,
+      "stoi": 0.858,
+      "wireKbps": 11.3,
+      "packetsPerSecond": 10.0,
+      "maxPacketBytes": 119
     },
     {
-      "id": "opus_nb_12k",
-      "label": "Opus 12 kbit/s, 20 ms",
-      "group": "nb",
-      "note": "Narrowband ceiling: needs 150 bytes per 100 ms, so it no longer fits today's frame limit.",
-      "mp3": "assets/clips/opus_nb_12k.mp3",
-      "wav": "assets/clips/opus_nb_12k.wav",
-      "sourceRate": "8000",
-      "pesq": "4.305",
-      "stoi": "0.759",
-      "wireKbps": "25.06",
-      "payloadKbps": "11.06",
-      "packetsPerSecond": 50.0,
-      "maxPacketBytes": "42"
+      "id": "wb16_100",
+      "label": "Opus 16 kbit/s, 16 kHz, 100 ms packets",
+      "band": "16 kHz",
+      "group": "codec",
+      "note": "Wideband with real headroom. 192-byte packets, so this needs the frame cap lifted.",
+      "pesq": 4.05,
+      "pesqMin": 4.02,
+      "pesqMax": 4.11,
+      "stoi": 0.904,
+      "wireKbps": 16.9,
+      "packetsPerSecond": 10.0,
+      "maxPacketBytes": 197
     },
     {
-      "id": "opus_nb_15k",
-      "label": "Opus 15 kbit/s, 20 ms",
-      "group": "nb",
-      "note": "Above what narrowband can use. Included to show where narrowband stops improving.",
-      "mp3": "assets/clips/opus_nb_15k.mp3",
-      "wav": "assets/clips/opus_nb_15k.wav",
-      "sourceRate": "8000",
-      "pesq": "4.400",
-      "stoi": "0.775",
-      "wireKbps": "28.27",
-      "payloadKbps": "14.27",
-      "packetsPerSecond": 50.0,
-      "maxPacketBytes": "49"
+      "id": "wb16_60",
+      "label": "Opus 16 kbit/s, 16 kHz, 60 ms packets",
+      "band": "16 kHz",
+      "group": "codec",
+      "note": "The balanced wideband setting.",
+      "pesq": 4.27,
+      "pesqMin": 4.22,
+      "pesqMax": 4.32,
+      "stoi": 0.911,
+      "wireKbps": 20.4,
+      "packetsPerSecond": 16.7,
+      "maxPacketBytes": 164
+    },
+    {
+      "id": "wb24_60",
+      "label": "Opus 24 kbit/s, 16 kHz, 60 ms packets",
+      "band": "16 kHz",
+      "group": "codec",
+      "note": "Comfortable wideband if bandwidth is not scarce.",
+      "pesq": 4.45,
+      "pesqMin": 4.39,
+      "pesqMax": 4.5,
+      "stoi": 0.917,
+      "wireKbps": 28.4,
+      "packetsPerSecond": 16.7,
+      "maxPacketBytes": 228
+    },
+    {
+      "id": "wb32_60",
+      "label": "Opus 32 kbit/s, 16 kHz, 60 ms packets",
+      "band": "16 kHz",
+      "group": "codec",
+      "note": "Diminishing returns start here.",
+      "pesq": 4.48,
+      "pesqMin": 4.43,
+      "pesqMax": 4.55,
+      "stoi": 0.92,
+      "wireKbps": 36.3,
+      "packetsPerSecond": 16.7,
+      "maxPacketBytes": 299
     },
     {
       "id": "ipmr_loss",
-      "label": "today: IPMR, 5 % loss",
+      "label": "today: Spirit IPMR, 5 % packet loss",
+      "band": "8 kHz",
       "group": "loss",
-      "note": "What today's protocol does at 5 % packet loss: no concealment, the gaps are silence.",
-      "mp3": "assets/clips/ipmr_loss.mp3",
-      "wav": "assets/clips/ipmr_loss.wav",
-      "sourceRate": "8000",
-      "pesq": "2.215",
-      "stoi": "0.635",
-      "wireKbps": "9.15",
-      "payloadKbps": "6.35",
+      "note": "One packet in twenty missing. Today's client has no concealment, so the gaps are silence.",
+      "pesq": 1.44,
+      "pesqMin": 1.25,
+      "pesqMax": 1.57,
+      "stoi": 0.837,
+      "wireKbps": 9.0,
       "packetsPerSecond": 10.0,
-      "maxPacketBytes": "107"
+      "maxPacketBytes": 114
     },
     {
-      "id": "opus_loss_60",
-      "label": "Opus 9.6 kbit/s, 60 ms, 5 % loss + FEC",
+      "id": "nb96_60_loss",
+      "label": "Opus 9.6 kbit/s, 8 kHz, 60 ms, 5 % loss + FEC",
+      "band": "8 kHz",
       "group": "loss",
-      "note": "Same 5 % loss with in-band forward error correction, which today's client has no equivalent of.",
-      "mp3": "assets/clips/opus_loss_60.mp3",
-      "wav": "assets/clips/opus_loss_60.wav",
-      "sourceRate": "8000",
-      "pesq": "3.122",
-      "stoi": "0.710",
-      "wireKbps": "13.10",
-      "payloadKbps": "8.43",
+      "note": "Same loss with in-band forward error correction.",
+      "pesq": 1.86,
+      "pesqMin": 1.52,
+      "pesqMax": 2.05,
+      "stoi": 0.863,
+      "wireKbps": 13.7,
       "packetsPerSecond": 16.7,
-      "maxPacketBytes": "89"
+      "maxPacketBytes": 94
     },
     {
-      "id": "opus_loss_20",
-      "label": "Opus 9.6 kbit/s, 20 ms, 5 % loss + FEC",
+      "id": "wb16_60_loss",
+      "label": "Opus 16 kbit/s, 16 kHz, 60 ms, 5 % loss + FEC",
+      "band": "16 kHz",
       "group": "loss",
-      "note": "Small packets shrink each loss to 20 ms, so the same loss pattern hurts less.",
-      "mp3": "assets/clips/opus_loss_20.mp3",
-      "wav": "assets/clips/opus_loss_20.wav",
-      "sourceRate": "8000",
-      "pesq": "3.375",
-      "stoi": "0.720",
-      "wireKbps": "22.51",
-      "payloadKbps": "8.51",
-      "packetsPerSecond": 50.0,
-      "maxPacketBytes": "34"
+      "note": "Wideband with the same loss and FEC.",
+      "pesq": 2.82,
+      "pesqMin": 2.64,
+      "pesqMax": 2.96,
+      "stoi": 0.875,
+      "wireKbps": 20.4,
+      "packetsPerSecond": 16.7,
+      "maxPacketBytes": 163
     }
-  ],
-  "wideband": [
-    {
-      "id": "wb_ceiling8k",
-      "label": "8 kHz ceiling: reference cut to 4 kHz",
-      "group": "wideband",
-      "note": "Not a codec: the uncompressed recording, band-limited to 4 kHz and upsampled. It is the best any 8 kHz pipeline can do.",
-      "mp3": "assets/clips/wb_ceiling8k.mp3",
-      "wav": "assets/clips/wb_ceiling8k.wav",
-      "sourceRate": "48000",
-      "pesq": "2.222",
-      "stoi": "0.992",
-      "wireKbps": null,
-      "payloadKbps": null,
-      "packetsPerSecond": null,
-      "maxPacketBytes": null
-    },
-    {
-      "id": "wb_ipmr",
-      "label": "today: Spirit IPMR, 8 kHz",
-      "group": "wideband",
-      "note": "The 2007 codec scored on the wideband scale, so its missing 4-8 kHz band counts against it.",
-      "mp3": "assets/clips/wb_ipmr.mp3",
-      "wav": "assets/clips/wb_ipmr.wav",
-      "sourceRate": "48000",
-      "pesq": "1.366",
-      "stoi": "0.843",
-      "wireKbps": "9.07",
-      "payloadKbps": "6.27",
-      "packetsPerSecond": 10.0,
-      "maxPacketBytes": "111"
-    },
-    {
-      "id": "wb_opus_nb_100",
-      "label": "Opus 9.6 kbit/s, 8 kHz, 100 ms packets",
-      "group": "wideband",
-      "note": "Opus narrowband in today's packet shape. Better than IPMR, still capped by the 8 kHz ceiling.",
-      "mp3": "assets/clips/wb_opus_nb_100.mp3",
-      "wav": "assets/clips/wb_opus_nb_100.wav",
-      "sourceRate": "48000",
-      "pesq": "1.822",
-      "stoi": "0.880",
-      "wireKbps": "11.25",
-      "payloadKbps": "8.45",
-      "packetsPerSecond": 10.0,
-      "maxPacketBytes": "117"
-    },
-    {
-      "id": "wb_opus_nb_60",
-      "label": "Opus 9.6 kbit/s, 8 kHz, 60 ms packets",
-      "group": "wideband",
-      "note": "Opus narrowband, shorter packets.",
-      "mp3": "assets/clips/wb_opus_nb_60.mp3",
-      "wav": "assets/clips/wb_opus_nb_60.wav",
-      "sourceRate": "48000",
-      "pesq": "1.941",
-      "stoi": "0.890",
-      "wireKbps": "13.73",
-      "payloadKbps": "9.07",
-      "packetsPerSecond": 16.7,
-      "maxPacketBytes": "84"
-    },
-    {
-      "id": "wb_opus_nb_wb_9k6",
-      "label": "Opus 9.6 kbit/s, 16 kHz, 100 ms packets",
-      "group": "wideband",
-      "note": "Wideband in today's packet shape. 118 bytes maximum, so it still fits the client's 124-byte frame cap.",
-      "mp3": "assets/clips/wb_opus_nb_wb_9k6.mp3",
-      "wav": "assets/clips/wb_opus_nb_wb_9k6.wav",
-      "sourceRate": "48000",
-      "pesq": "2.513",
-      "stoi": "0.855",
-      "wireKbps": "11.38",
-      "payloadKbps": "8.58",
-      "packetsPerSecond": 10.0,
-      "maxPacketBytes": "118"
-    },
-    {
-      "id": "wb_opus_wb_16k_f5",
-      "label": "Opus 16 kbit/s, 16 kHz, 100 ms packets",
-      "group": "wideband",
-      "note": "Wideband at 100 ms packets: 192 bytes, past the current cap.",
-      "mp3": "assets/clips/wb_opus_wb_16k_f5.mp3",
-      "wav": "assets/clips/wb_opus_wb_16k_f5.wav",
-      "sourceRate": "16000",
-      "pesq": "4.036",
-      "stoi": "0.902",
-      "wireKbps": "16.98",
-      "payloadKbps": "14.18",
-      "packetsPerSecond": 10.0,
-      "maxPacketBytes": "192"
-    },
-    {
-      "id": "wb_opus_16k",
-      "label": "Opus 16 kbit/s, 16 kHz, 60 ms packets",
-      "group": "wideband",
-      "note": "Wideband: twice the spectrum, first configuration that clears the ceiling.",
-      "mp3": "assets/clips/wb_opus_16k.mp3",
-      "wav": "assets/clips/wb_opus_16k.wav",
-      "sourceRate": "16000",
-      "pesq": "4.266",
-      "stoi": "0.907",
-      "wireKbps": "20.51",
-      "payloadKbps": "15.84",
-      "packetsPerSecond": 16.7,
-      "maxPacketBytes": "153"
-    },
-    {
-      "id": "wb_opus_24k",
-      "label": "Opus 24 kbit/s, 16 kHz, 60 ms packets",
-      "group": "wideband",
-      "note": "The recommended balance if bandwidth is not scarce.",
-      "mp3": "assets/clips/wb_opus_24k.mp3",
-      "wav": "assets/clips/wb_opus_24k.wav",
-      "sourceRate": "48000",
-      "pesq": "4.470",
-      "stoi": "0.916",
-      "wireKbps": "28.53",
-      "payloadKbps": "23.86",
-      "packetsPerSecond": 16.7,
-      "maxPacketBytes": "219"
-    },
-    {
-      "id": "wb_opus_32k",
-      "label": "Opus 32 kbit/s, 16 kHz, 60 ms packets",
-      "group": "wideband",
-      "note": "Diminishing returns start here.",
-      "mp3": "assets/clips/wb_opus_32k.mp3",
-      "wav": "assets/clips/wb_opus_32k.wav",
-      "sourceRate": "48000",
-      "pesq": "4.512",
-      "stoi": "0.918",
-      "wireKbps": "36.53",
-      "payloadKbps": "31.87",
-      "packetsPerSecond": 16.7,
-      "maxPacketBytes": "295"
-    }
-  ],
-  "deliveryCodec": "MP3 192k mono, -20 LUFS",
-  "corpus": "Open Speech Repository, American English, 8 kHz (voiptroubleshooter.com)"
+  ]
 }

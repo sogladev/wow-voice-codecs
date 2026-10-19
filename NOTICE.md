@@ -23,10 +23,10 @@ and re-encoded. See the source page for the terms that apply to those recordings
 
 ## LibriSpeech
 
-The wideband clips under `assets/clips/wb_*` are derived from **LibriSpeech** dev-clean
-(OpenSLR SLR12, https://www.openslr.org/12/), read English speech at 16 kHz, licensed
-under Creative Commons Attribution 4.0. The excerpt is cut to a 12 second window,
-loudness-normalised and re-encoded; it is not the original file.
+All clips under `assets/clips/` are derived from four utterances of **LibriSpeech**
+dev-clean (OpenSLR SLR12, https://www.openslr.org/12/), read English speech at 16 kHz,
+licensed under Creative Commons Attribution 4.0. Each is cut to an eight second window,
+loudness-normalised and re-encoded; they are not the original files.
 
 ## Opus
 

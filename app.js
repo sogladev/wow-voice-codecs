@@ -1,20 +1,18 @@
-// Listening comparison page: one audio element per section, switching keeps the
-// playback position so two codecs can be compared on the same moment of speech.
+// One comparison, several samples: every player shares the selected sample, and
+// switching a configuration keeps the playback position so the same moment of
+// speech can be compared between codecs.
 
-const state = { data: null, players: {} };
+const state = { data: null, itemIndex: 0, players: [], chips: [] };
 
-function fmt(x) {
-  return x === null || x === undefined || x === "" ? "–" : x;
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const GROUP_LABELS = { reference: "reference", codec: "codecs", loss: "packet loss" };
+
+function fmt(value) {
+  return value === null || value === undefined || value === "" ? "–" : value;
 }
 
-function bestWorst(values) {
-  const nums = values.filter((v) => v !== null && v !== undefined && v !== "").map(Number);
-  if (!nums.length) return { best: null, worst: null };
-  return { best: Math.max(...nums), worst: Math.min(...nums) };
-}
-
-function shuffle(arr) {
-  const a = arr.slice();
+function shuffle(list) {
+  const a = list.slice();
   for (let i = a.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
@@ -22,122 +20,155 @@ function shuffle(arr) {
   return a;
 }
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+function formatTime(sec) {
+  if (!Number.isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
-function buildPlayer(root, variants) {
-  if (!variants.length) {
-    root.closest(".panel").hidden = true;
-    return null;
-  }
+function bestWorst(values) {
+  const nums = values.filter((v) => v !== null && v !== undefined).map(Number);
+  if (!nums.length) return { best: null, worst: null };
+  return { best: Math.max(...nums), worst: Math.min(...nums) };
+}
 
+// ---------------------------------------------------------------- sample picker
+
+function buildSampleChips(items) {
+  const host = document.querySelector("#sample-chips");
+  state.chips = items.map((item, index) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.setAttribute("aria-pressed", String(index === 0));
+    chip.textContent = item.label || `sample ${index + 1}`;
+    chip.title = item.text || "";
+    chip.addEventListener("click", () => selectSample(index));
+    host.append(chip);
+    return chip;
+  });
+  updateSampleText();
+}
+
+function updateSampleText() {
+  const item = state.data.items[state.itemIndex];
+  document.querySelector("#sample-text").textContent = item && item.text ? `“${item.text.toLowerCase()}”` : "";
+  state.chips.forEach((chip, i) => chip.setAttribute("aria-pressed", String(i === state.itemIndex)));
+}
+
+function selectSample(index) {
+  state.itemIndex = index;
+  updateSampleText();
+  for (const player of state.players) player.applyClip({ keepPlaying: true });
+}
+
+// ---------------------------------------------------------------------- player
+
+function buildPlayer(root, configs) {
   const audio = new Audio();
   audio.preload = "auto";
+
   const playBtn = root.querySelector(".play");
   const seek = root.querySelector(".seek");
   const timeEl = root.querySelector(".time");
   const list = root.querySelector(".variants");
   const nowPlaying = root.querySelector(".now-playing");
+  const note = root.querySelector(".config-note");
   const blindToggle = root.querySelector(".blind-toggle");
   const revealBtn = root.querySelector(".reveal");
 
-  // blind labels: a stable random order per page load
-  const blindOrder = shuffle(variants.map((v) => v.id));
+  const blindOrder = shuffle(configs.map((c) => c.id));
   const blindLabel = new Map(blindOrder.map((id, i) => [id, LETTERS[i] || `#${i + 1}`]));
 
   const player = {
-    variants,
+    configs,
     audio,
-    current: variants[0].id,
+    current: configs[0].id,
     buttons: new Map(),
     blind: false,
   };
 
-  function labelFor(v) {
-    return player.blind ? blindLabel.get(v.id) : v.label;
-  }
+  const labelFor = (cfg) => (player.blind ? blindLabel.get(cfg.id) : cfg.label);
 
-  function refreshLabels() {
-    for (const v of variants) {
-      const btn = player.buttons.get(v.id);
-      const strong = btn.querySelector(".name");
-      strong.textContent = labelFor(v);
-      btn.setAttribute("aria-pressed", String(v.id === player.current));
-    }
-    revealBtn.hidden = !player.blind;
-    const cur = variants.find((v) => v.id === player.current);
-    nowPlaying.textContent = cur ? `now playing: ${labelFor(cur)}` : "";
-  }
-
-  function select(id, { keepPlaying = true } = {}) {
-    const v = variants.find((x) => x.id === id);
-    if (!v) return;
-    if (id === player.current && audio.src) {
-      refreshLabels();
-      return;
-    }
+  player.applyClip = ({ keepPlaying = true } = {}) => {
+    const item = state.data.items[state.itemIndex];
+    const clip = item && item.clips[player.current];
+    if (!clip) return;
 
     const wasPlaying = !audio.paused;
     const at = audio.currentTime || 0;
-    player.current = id;
-
-    audio.src = v.mp3;
+    audio.src = clip.mp3;
     audio.load();
-
-    const resume = () => {
+    audio.addEventListener("loadedmetadata", () => {
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
         audio.currentTime = Math.min(at, Math.max(0, audio.duration - 0.05));
       }
-      if (keepPlaying && (wasPlaying || player.firstStart)) {
-        audio.play().catch(() => {});
-      }
-    };
-    audio.addEventListener("loadedmetadata", resume, { once: true });
+      if (keepPlaying && (wasPlaying || player.firstStart)) audio.play().catch(() => {});
+    }, { once: true });
     refreshLabels();
+  };
+
+  const select = (id) => {
+    if (id === player.current && audio.src) return;
+    player.current = id;
+    player.applyClip({ keepPlaying: true });
+  };
+
+  function refreshLabels() {
+    for (const cfg of configs) {
+      const btn = player.buttons.get(cfg.id);
+      if (!btn) continue;
+      btn.querySelector(".name").textContent = labelFor(cfg);
+      btn.setAttribute("aria-pressed", String(cfg.id === player.current));
+      btn.disabled = !(state.data.items[state.itemIndex] || {}).clips[cfg.id];
+    }
+    revealBtn.hidden = !player.blind;
+    const current = configs.find((c) => c.id === player.current);
+    nowPlaying.textContent = current ? `now playing: ${labelFor(current)}` : "";
+    if (note) note.textContent = current && !player.blind ? current.note || "" : "";
   }
 
-  function buildButton(v, index) {
+  // group the buttons so the ladder from 8 kHz to 16 kHz is visible
+  let lastGroup = null;
+  for (const cfg of configs) {
+    if (cfg.group !== lastGroup) {
+      const heading = document.createElement("div");
+      heading.className = "variant-group";
+      heading.textContent = GROUP_LABELS[cfg.group] || cfg.group;
+      list.append(heading);
+      lastGroup = cfg.group;
+    }
+
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.setAttribute("aria-pressed", String(v.id === player.current));
+    btn.setAttribute("aria-pressed", String(cfg.id === player.current));
 
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = labelFor(v);
+    name.textContent = labelFor(cfg);
 
     const meta = document.createElement("span");
     meta.className = "meta";
     const parts = [];
-    if (v.wireKbps) parts.push(`${v.wireKbps} kbit/s wire`);
-    if (v.pesq) parts.push(`PESQ ${v.pesq}`);
-    if (index < 9) parts.push(`${index + 1}`);
+    if (cfg.band) parts.push(cfg.band);
+    if (cfg.wireKbps) parts.push(`${cfg.wireKbps} kbit/s wire`);
+    if (cfg.pesq) parts.push(`PESQ ${cfg.pesq}`);
     meta.textContent = parts.join(" · ");
-
-    const wavLink = document.createElement("a");
-    wavLink.className = "exact";
-    wavLink.href = v.wav;
-    wavLink.download = `${v.id}.wav`;
-    wavLink.textContent = "wav";
-    wavLink.addEventListener("click", (event) => event.stopPropagation());
-    meta.append(meta.textContent ? " · " : "", wavLink);
 
     btn.append(name, meta);
     btn.addEventListener("click", () => {
       player.firstStart = true;
-      select(v.id);
+      select(cfg.id);
     });
-    player.buttons.set(v.id, btn);
-    return btn;
+    player.buttons.set(cfg.id, btn);
+    list.append(btn);
   }
-
-  variants.forEach((v, i) => list.append(buildButton(v, i)));
 
   playBtn.addEventListener("click", () => {
     player.firstStart = true;
     if (audio.paused) {
-      if (!audio.src) {
-        select(player.current);
-        return;
-      }
+      if (!audio.src) player.applyClip({ keepPlaying: false });
       audio.play().catch(() => {});
     } else {
       audio.pause();
@@ -146,15 +177,11 @@ function buildPlayer(root, variants) {
 
   audio.addEventListener("play", () => { playBtn.textContent = "Pause"; });
   audio.addEventListener("pause", () => { playBtn.textContent = "Play"; });
-
+  audio.addEventListener("ended", () => { audio.currentTime = 0; });
   audio.addEventListener("timeupdate", () => {
     const d = audio.duration || 0;
     seek.value = d ? String(Math.round((audio.currentTime / d) * 1000)) : "0";
     timeEl.textContent = `${formatTime(audio.currentTime)} / ${formatTime(d)}`;
-  });
-
-  audio.addEventListener("ended", () => {
-    audio.currentTime = 0;
   });
 
   seek.addEventListener("input", () => {
@@ -173,89 +200,50 @@ function buildPlayer(root, variants) {
     refreshLabels();
   });
 
-  // preload the rest once the user has started, so switching is instant
-  audio.addEventListener("playing", () => {
-    for (const v of variants) {
-      if (v.id === player.current) continue;
-      const a = new Audio();
-      a.preload = "auto";
-      a.src = v.mp3;
-    }
-  }, { once: true });
-
-  select(variants[0].id, { keepPlaying: false });
+  player.applyClip({ keepPlaying: false });
   refreshLabels();
   return player;
 }
 
-function emptyBuildNotice() {
-  const notice = document.createElement("section");
-  notice.className = "panel notice";
-  notice.innerHTML =
-    "<h2>data.json has no clips</h2>" +
-    "<p>The page loaded, but the file it reads contains no measurements, so there is nothing to play. " +
-    "This happens when <code>tools/build_site.py</code> runs without the measurement outputs: it used to " +
-    "overwrite <code>data.json</code> with an empty list, which is fixed now, but the file can still be " +
-    "empty if a build was interrupted.</p>" +
-    "<p>Restore the committed version, or rebuild the clips:</p>" +
-    "<pre><code>git checkout -- data.json\n\n" +
-    "DECOMP=/path/to/wowdecomp ./tools/build.sh\n" +
-    "./tools/run_preview.sh\n" +
-    "./tools/run_wideband.sh corpus/librispeech_16k.wav\n" +
-    "./tools/build_site.py</code></pre>";
-  document.querySelector("main").prepend(notice);
-}
+// ----------------------------------------------------------------------- table
 
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec < 0) sec = 0;
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function renderTable(variants, selector = "#nb-table") {
-  const table = document.querySelector(selector);
-  if (!table) return;
-  const measures = [
-    ["wireKbps", "wire kbit/s"],
-    ["packetsPerSecond", "pkt/s"],
-    ["maxPacketBytes", "max packet"],
-    ["payloadKbps", "payload kbit/s"],
-    ["pesq", "PESQ"],
-    ["stoi", "STOI"],
-  ];
-
-  const pesqStats = bestWorst(variants.filter((v) => v.pesq).map((v) => v.pesq));
-
-  const thead = document.createElement("thead");
-  const headRow = document.createElement("tr");
-  headRow.append(Object.assign(document.createElement("th"), { textContent: "configuration", scope: "col" }));
-  for (const [, label] of measures) {
+function renderTable(configs) {
+  const table = document.querySelector("#main-table");
+  const header = document.createElement("tr");
+  for (const [label, cls] of [["configuration", ""], ["band", ""], ["wire kbit/s", "num"],
+    ["pkt/s", "num"], ["max packet", "num"], ["PESQ-WB", "num"], ["STOI", "num"]]) {
     const th = document.createElement("th");
-    th.textContent = label;
     th.scope = "col";
-    headRow.append(th);
+    th.textContent = label;
+    if (cls) th.className = cls;
+    header.append(th);
   }
-  thead.append(headRow);
+  const thead = document.createElement("thead");
+  thead.append(header);
+
+  const codecPesq = bestWorst(configs.filter((c) => c.group === "codec").map((c) => c.pesq));
 
   const tbody = document.createElement("tbody");
-  for (const v of variants) {
+  for (const cfg of configs) {
     const tr = document.createElement("tr");
+    if (cfg.group === "reference") tr.className = "row-reference";
+
     const th = document.createElement("th");
     th.scope = "row";
-    th.textContent = v.label;
+    th.textContent = cfg.label;
     tr.append(th);
-    for (const [key] of measures) {
+
+    for (const value of [cfg.band, cfg.wireKbps, cfg.packetsPerSecond, cfg.maxPacketBytes, cfg.pesq, cfg.stoi]) {
       const td = document.createElement("td");
-      const value = v[key];
       td.textContent = fmt(value);
-      if (value === null || value === undefined || value === "") td.classList.add("missing");
-      if (key === "pesq" && v.pesq) {
-        const n = Number(v.pesq);
-        if (n === pesqStats.best) td.classList.add("best");
-        if (n === pesqStats.worst) td.classList.add("worst");
-      }
+      if (value === null || value === undefined) td.classList.add("missing");
       tr.append(td);
+    }
+
+    if (cfg.pesq !== null && cfg.pesq !== undefined) {
+      const cell = tr.children[5];
+      if (Number(cfg.pesq) === codecPesq.best) cell.classList.add("best");
+      if (Number(cfg.pesq) === codecPesq.worst) cell.classList.add("worst");
     }
     tbody.append(tr);
   }
@@ -263,61 +251,20 @@ function renderTable(variants, selector = "#nb-table") {
   table.append(thead, tbody);
 }
 
-function renderFooter(data) {
-  document.querySelector("#generated").textContent = data.generated || "";
-  document.querySelector("#corpus").textContent = data.corpus || "";
-  document.querySelector("#delivery").textContent = data.deliveryCodec || "";
-}
+// ------------------------------------------------------------------- bootstrap
 
-function wirePlayers(data) {
-  for (const root of document.querySelectorAll(".player")) {
-    const group = root.dataset.group;
-    const variants = group === "wideband" ? data.wideband : data.narrowband.filter((v) => v.group === group);
-    const player = buildPlayer(root, variants || []);
-    if (player) state.players[group] = player;
-  }
-
-  if ((data.wideband || []).length) {
-    document.querySelector("#wb-section").hidden = false;
-    document.querySelector("#wb-pending").hidden = true;
-  }
-
-  // keyboard: space toggles the player in view, digits switch variant
-  document.addEventListener("keydown", (event) => {
-    const tag = (event.target.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "textarea" || tag === "select") return;
-
-    const groups = Object.entries(state.players);
-    if (!groups.length) return;
-
-    if (event.code === "Space") {
-      const [, player] = groups.find(([, p]) => !p.audio.paused) || groups[0];
-      event.preventDefault();
-      player.firstStart = true;
-      if (player.audio.paused) {
-        if (!player.audio.src) {
-          player.select(player.current);
-          return;
-        }
-        player.audio.play().catch(() => {});
-      } else {
-        player.audio.pause();
-      }
-      return;
-    }
-
-    const n = Number(event.key);
-    if (Number.isInteger(n) && n >= 1 && n <= 9) {
-      const [, player] = groups.find(([, p]) => !p.audio.paused) || groups[0];
-      const v = player.variants[n - 1];
-      if (v) {
-        event.preventDefault();
-        player.firstStart = true;
-        // reuse the internal selector through a synthetic click on its button
-        player.buttons.get(v.id).click();
-      }
-    }
-  });
+function emptyBuildNotice() {
+  const notice = document.createElement("section");
+  notice.className = "panel notice";
+  notice.innerHTML =
+    "<h2>data.json has no clips</h2>" +
+    "<p>The page loaded, but the file it reads contains no measurements, so there is nothing to play. " +
+    "Restore the committed version, or rebuild the clips:</p>" +
+    "<pre><code>git checkout -- data.json\n\n" +
+    "DECOMP=/path/to/wowdecomp ./tools/build.sh\n" +
+    "./tools/run_matrix.sh\n" +
+    "./tools/build_site.py</code></pre>";
+  document.querySelector("main").prepend(notice);
 }
 
 async function main() {
@@ -328,23 +275,62 @@ async function main() {
     data = await res.json();
   } catch (err) {
     document.querySelector(".lede").textContent =
-      `Could not load data.json (${err.message}). Build the clips with ./site/build_site.py first.`;
+      `Could not load data.json (${err.message}). Run ./serve.sh from the repository root.`;
     return;
   }
 
   state.data = data;
+  document.querySelector("#generated").textContent = data.generated || "";
+  document.querySelector("#corpus").textContent = data.corpus || "";
+  document.querySelector("#delivery").textContent = data.deliveryCodec || "";
 
-  if (!(data.narrowband || []).length) {
+  if (!(data.items || []).length || !(data.configs || []).length) {
     emptyBuildNotice();
-    renderFooter(data);
     return;
   }
 
-  renderFooter(data);
-  renderTable(data.narrowband.filter((v) => v.group === "nb"), "#nb-table");
-  renderTable(data.narrowband.filter((v) => v.group === "loss"), "#loss-table");
-  renderTable(data.wideband || [], "#wb-table");
-  wirePlayers(data);
+  const compareConfigs = data.configs.filter((c) => c.group !== "loss");
+  const lossConfigs = data.configs.filter((c) => c.group === "loss");
+
+  buildSampleChips(data.items);
+
+  const compareRoot = document.querySelector('.player[data-player="compare"]');
+  const lossRoot = document.querySelector('.player[data-player="loss"]');
+
+  state.players.push(buildPlayer(compareRoot, compareConfigs));
+  state.players.push(buildPlayer(lossRoot, lossConfigs.length ? lossConfigs : compareConfigs));
+
+  renderTable(data.configs);
+
+  // keyboard: space toggles the visible player, 1-9 switch configuration
+  document.addEventListener("keydown", (event) => {
+    const tag = (event.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    const playing = state.players.find((p) => !p.audio.paused) || state.players[0];
+    if (!playing) return;
+
+    if (event.code === "Space") {
+      event.preventDefault();
+      playing.firstStart = true;
+      if (playing.audio.paused) {
+        if (!playing.audio.src) playing.applyClip({ keepPlaying: false });
+        playing.audio.play().catch(() => {});
+      } else {
+        playing.audio.pause();
+      }
+      return;
+    }
+
+    const n = Number(event.key);
+    if (Number.isInteger(n) && n >= 1 && n <= 9) {
+      const cfg = playing.configs[n - 1];
+      const btn = cfg && playing.buttons.get(cfg.id);
+      if (btn && !btn.disabled) {
+        event.preventDefault();
+        btn.click();
+      }
+    }
+  });
 }
 
 main();

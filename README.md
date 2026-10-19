@@ -5,74 +5,63 @@ client and Opus, with the bandwidth, PESQ and packet-loss numbers that go with i
 
 **The page:** https://sogladev.github.io/wow-voice-codecs/
 
-It plays the same ten seconds of speech through each codec, so the only thing that
-changes when you switch is the codec. Names can be hidden for a blind test, playback
-position is kept across a switch, and every clip has a WAV download next to it because
-the MP3 is only the delivery layer.
+Four samples, one list of configurations. Every clip is the same eight seconds of the same
+sentence, so switching between configurations changes only the codec; switching between
+samples changes only the sentence. Playback position is kept across a switch, and the
+names can be hidden for a blind test.
 
 ## What the old codec is
 
 The 3.3.5a client encodes voice with **Spirit IPMR** (`ComSat` in the client, the
 `SPIRIT` sources in the decompilation). One 100 ms frame per UDP datagram, 8 kHz,
 16-bit input, variable rate between 360 and 960 bits per frame. On speech it settles
-around **6.4 kbit/s of payload, 9.2 kbit/s on the wire** including the client's 7-byte
+around **6.2 kbit/s of payload, 9.0 kbit/s on the wire** including the client's 7-byte
 voice header and UDP/IPv4. There is no loss concealment: a packet that does not arrive
 is an empty jitter slot that gets played as silence.
 
-## Measured results, narrowband
+## Measured results
 
-PESQ is ITU-T P.862 (1.0–4.5, higher is better) against the uncompressed source.
-Wire bitrate includes the 7-byte client header plus UDP and IPv4 overhead.
+Four sentences from LibriSpeech dev-clean (16 kHz, CC BY 4.0), averaged. Every
+configuration is scored with PESQ-WB against the same 16 kHz original, so 8 kHz and
+16 kHz pipelines share one scale. PESQ-WB is ITU-T P.862.2, higher is better, 4.5 is the
+top of the scale. Wire bitrate includes the client's 7-byte voice header plus UDP and IPv4.
 
-| configuration | wire kbit/s | pkt/s | max packet | PESQ | PESQ @ 5 % loss |
-|---|---|---|---|---|---|
-| today: IPMR | 9.2 | 10 | 107 B | 2.69 | 2.22 |
-| Opus 10.8 kbit/s, 100 ms packets | 10.8 | 10 | 117 B | 3.91 | 2.91 |
-| Opus 13.1 kbit/s, 60 ms packets | 13.1 | 17 | 91 B | 4.16 | 3.12 |
-| Opus 22.5 kbit/s, 20 ms packets | 22.5 | 50 | 34 B | 4.13 | 3.38 |
-| Opus 25 kbit/s, 20 ms packets | 25.1 | 50 | 42 B | 4.31 | – |
-| Opus 28 kbit/s, 20 ms packets | 28.3 | 50 | 51 B | 4.40 | – |
+| configuration | band | wire kbit/s | pkt/s | max packet | PESQ-WB | STOI |
+|---|---|---|---|---|---|---|
+| **8 kHz ceiling** (reference cut to 4 kHz) | 8 kHz | – | – | – | **2.58** | 0.994 |
+| today: Spirit IPMR, 100 ms packets | 8 kHz | 9.0 | 10 | 114 B | 1.56 | 0.856 |
+| Opus 9.6 kbit/s, 100 ms packets | 8 kHz | 11.2 | 10 | 118 B | 2.09 | 0.885 |
+| Opus 9.6 kbit/s, 60 ms packets | 8 kHz | 13.6 | 17 | 90 B | 2.26 | 0.895 |
+| Opus 9.6 kbit/s, 100 ms packets | 16 kHz | 11.3 | 10 | 119 B | 2.70 | 0.858 |
+| Opus 16 kbit/s, 100 ms packets | 16 kHz | 16.9 | 10 | 197 B | 4.05 | 0.904 |
+| Opus 16 kbit/s, 60 ms packets | 16 kHz | 20.4 | 17 | 164 B | 4.27 | 0.911 |
+| Opus 24 kbit/s, 60 ms packets | 16 kHz | 28.4 | 17 | 228 B | 4.45 | 0.917 |
+| Opus 32 kbit/s, 60 ms packets | 16 kHz | 36.3 | 17 | 299 B | 4.48 | 0.920 |
 
-Two things worth noticing:
+With 5 % packet loss (one datagram in twenty):
 
-- Opus at 9.6 kbit/s in the **same 100 ms packet shape** the client already uses scores
-  3.91 instead of 2.69, and its largest packet is 117 bytes, inside both hard caps of the
-  existing pipeline (`LocalTalker::Frame::m_data[124]`, `VoicePacket::m_data[128]`). That
-  makes the codec swap worthwhile on its own, with no framing or transport changes.
-- Packet size is a bandwidth decision. At 50 packets per second the 7-byte client header
-  plus UDP/IPv4 costs 14 kbit/s before any audio; the same audio at 10 packets per second
-  costs 10.8 kbit/s.
-
-## Wideband: 16 kHz instead of 8 kHz
-
-Measured on LibriSpeech dev-clean (16 kHz, CC BY 4.0). Every row is scored with
-PESQ-WB against the same 16 kHz reference, so narrowband and wideband candidates share
-one scale. The first row is not a codec: it is the uncompressed reference cut to 4 kHz
-and upsampled, which is the best any 8 kHz pipeline can ever score.
-
-| configuration | PESQ-WB | STOI | wire kbit/s |
+| configuration | band | wire kbit/s | PESQ-WB |
 |---|---|---|---|
-| 8 kHz ceiling (band-limited reference) | 2.22 | 0.992 | – |
-| today: IPMR, 8 kHz | 1.37 | 0.843 | 9.1 |
-| Opus 9.6 kbit/s, 8 kHz, 100 ms | 1.82 | 0.880 | 11.3 |
-| Opus 9.6 kbit/s, 8 kHz, 60 ms | 1.94 | 0.890 | 13.7 |
-| Opus 9.6 kbit/s, 16 kHz, 100 ms | 2.51 | 0.855 | 11.4 |
-| Opus 16 kbit/s, 16 kHz, 100 ms | 4.04 | 0.902 | 17.0 |
-| Opus 16 kbit/s, 16 kHz, 60 ms | 4.27 | 0.907 | 20.5 |
-| Opus 24 kbit/s, 16 kHz, 60 ms | 4.47 | 0.916 | 28.5 |
-| Opus 32 kbit/s, 16 kHz, 60 ms | 4.51 | 0.918 | 36.5 |
+| today: Spirit IPMR | 8 kHz | 9.0 | 1.44 |
+| Opus 9.6 kbit/s, 60 ms, with FEC | 8 kHz | 13.7 | 1.86 |
+| Opus 16 kbit/s, 60 ms, with FEC | 16 kHz | 20.4 | 2.82 |
 
-The 9.6 kbit/s wideband row matters for scheduling the work: its largest packet is 118
-bytes, inside the client's existing 124-byte frame cap, so wideband can start with only
-the sample-rate change and no framing rework. Clearing the 8 kHz ceiling properly needs
-16–24 kbit/s, and those packets are 153–219 bytes, which is the step that forces the
-framing and time-base hooks.
+Three conclusions:
 
-Narrowband gets a better number for the same band (2.69 → 3.91 on the narrowband scale),
-but it cannot leave the 8 kHz ceiling: at 20–28 kbit/s and 16 kHz, Opus scores 4.3–4.5 on
-this scale for roughly double the bandwidth of today's protocol.
+- **The ceiling row is the point.** No codec choice can push an 8 kHz pipeline past 2.58,
+  because the audio above 4 kHz was never captured. Codec quality inside 8 kHz is much
+  closer to free: Opus at 9.6 kbit/s goes 1.56 → 2.26 for about 4 kbit/s more.
+- **Bandwidth is the real lever.** 16 kHz at 16–24 kbit/s reaches 4.05–4.45. The 164–228
+  byte packets no longer fit the client's 124-byte frame cap, so this is the step that
+  needs the framing and time-base hooks, not just the codec hook.
+- **Wideband at today's bitrate is the cheap middle step.** Opus at 9.6 kbit/s in
+  100 ms packets has a 119-byte largest packet: it fits the existing cap, needs no framing
+  work, and scores 2.70. Wideband Opus at 16 kbit/s needs 197 bytes for 4.05.
 
-Full report, including the caveats: [RESULTS.md](RESULTS.md).
+On the narrowband scale, where both sides are band-limited to 4 kHz and the ceiling row
+does not apply, the same runs score 2.89 (IPMR) against 3.95 and 4.22 (Opus at 9.6 kbit/s,
+100 ms and 60 ms). Both views are real; they answer different questions: "is the codec
+better in the same band" and "how much does bandwidth buy".
 
 ## Viewing the page
 
@@ -91,8 +80,7 @@ client (Spirit IPMR is its codec, and it is not redistributed here) and libopus.
 
 ```bash
 DECOMP=/path/to/wowdecomp ./tools/build.sh     # builds the IPMR probe
-./tools/run_preview.sh                         # narrowband runs over the 8 kHz corpus
-./tools/run_wideband.sh corpus/librispeech_16k.wav
+./tools/run_matrix.sh                          # every configuration over every sample
 ./tools/build_site.py                          # clips + PESQ + data.json for this page
 ./serve.sh                                     # http://127.0.0.1:8788/
 ```
@@ -106,17 +94,19 @@ data.json` restores the shipped version.
 −20 LUFS, writes a WAV at the source rate plus a 192 kbit/s mono MP3 for the player,
 recomputes PESQ and STOI, and rewrites `data.json`.
 
-## Speech corpora
+## Speech corpus
 
-- Narrowband: the **Open Speech Repository** American English Harvard sentences at 8 kHz,
-  published for VoIP codec testing.
-- Wideband: **LibriSpeech** dev-clean utterances at 16 kHz (CC BY 4.0, OpenSLR SLR12),
-  concatenated into a 12 second sample. This is standard material for speech codec work,
-  which is why the published numbers do not depend on anyone's microphone.
+**LibriSpeech** dev-clean (CC BY 4.0, OpenSLR SLR12): four sentences at 16 kHz, ten seconds
+each, in `corpus/items/`. Every sample is a 16 kHz recording, which is what lets the same
+audio go through both an 8 kHz and a 16 kHz pipeline and be scored on one scale.
 
-`./tools/record_sample.sh` is still there if a real headset microphone sample is wanted:
-the wideband section picks up `corpus/mic_sample_48k.*` in preference to the corpus when
-it exists.
+One speaker reads audiobook prose. That is fine for hearing codec artifacts and it keeps the
+numbers reproducible by anyone, but it is not a raid: no headset microphone, no background
+noise, no four people talking at once.
+
+To add samples, drop 16 kHz WAVs into `corpus/items/` as `<name>_ref16.wav` (optionally a
+`<name>.txt` with the id on line 1 and the text on line 2), add the name to `ITEMS` in
+`tools/run_matrix.sh`, run it, then `tools/build_site.py`.
 
 ## Layout
 
