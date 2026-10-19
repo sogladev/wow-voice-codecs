@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WoW 3.3.5a voice chat: Spirit IPMR vs Opus</title>
+<meta name="description" content="Blind listening comparison between the 2007 voice codec shipped in the World of Warcraft 3.3.5a client and Opus, with measured bandwidth, PESQ and packet-loss results.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23191c25'/%3E%3Cg fill='%237cc4ff'%3E%3Crect x='7' y='13' width='3' height='6' rx='1.5'/%3E%3Crect x='12' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='17' y='11' width='3' height='10' rx='1.5'/%3E%3Crect x='22' y='14' width='3' height='4' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+
+  <header>
+    <h1>WoW 3.3.5a voice chat: Spirit IPMR vs Opus</h1>
+    <p class="lede">
+      The 3.3.5a client encodes voice with <strong>Spirit IPMR</strong>, an 8&nbsp;kHz codec from 2007 that
+      spends 6.4&nbsp;kbit/s. This page plays the same sentence through that codec and through Opus at
+      several rates and packet sizes, decoded exactly as the client would, so you can hear the difference
+      instead of reading about it.
+    </p>
+    <dl class="stats">
+      <div><dt>today's payload</dt><dd>6.4 kbit/s</dd></div>
+      <div><dt>today, on the wire</dt><dd>9.2 kbit/s</dd></div>
+      <div><dt>Opus, same packet shape</dt><dd>10.8 kbit/s</dd></div>
+      <div><dt>PESQ, today vs Opus</dt><dd>2.69 &rarr; 3.91</dd></div>
+    </dl>
+  </header>
+
+  <section class="panel" id="nb-section">
+    <div class="panel-head">
+      <h2>Same band, same microphone</h2>
+      <p>
+        Every clip is a 10&nbsp;second slice of the same recording, loudness-matched and delivered as
+        192&nbsp;kbit/s MP3, so what you switch between is the voice codec and nothing else.
+        Use <kbd>1</kbd>–<kbd>8</kbd> to switch while it plays and <kbd>space</kbd> to pause.
+      </p>
+    </div>
+    <div class="player" data-group="nb" data-player="nb">
+      <div class="controls">
+        <button class="play" type="button" aria-label="Play or pause">Play</button>
+        <input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+        <span class="time">0:00 / 0:10</span>
+        <label class="blind"><input type="checkbox" class="blind-toggle"> blind test</label>
+      </div>
+      <div class="variants" role="group" aria-label="Choose codec"></div>
+      <p class="now-playing" aria-live="polite"></p>
+      <div class="reveal-row"><button class="reveal" type="button" hidden>reveal labels</button></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>What the numbers say</h2>
+      <p>
+        PESQ is ITU-T P.862 on a 1.0–4.5 scale, higher is better; it is a telephony measure, so treat it as
+        a ranking rather than a promise of how a raid sounds. Wire bitrate includes the client's 7-byte
+        voice header plus UDP and IPv4 overhead.
+      </p>
+    </div>
+    <div class="table-wrap"><table id="nb-table"><caption class="visually-hidden">Measured results, narrowband</caption></table></div>
+  </section>
+
+  <section class="panel" id="loss-section">
+    <div class="panel-head">
+      <h2>What a dropped packet sounds like</h2>
+      <p>
+        Today's client has no loss concealment: a packet that does not arrive leaves an empty jitter slot
+        that is played as silence. Both clips below lose one packet in twenty.
+      </p>
+    </div>
+    <div class="player" data-group="loss" data-player="loss">
+      <div class="controls">
+        <button class="play" type="button" aria-label="Play or pause">Play</button>
+        <input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+        <span class="time">0:00 / 0:10</span>
+        <label class="blind"><input type="checkbox" class="blind-toggle"> blind test</label>
+      </div>
+      <div class="variants" role="group" aria-label="Choose codec"></div>
+      <p class="now-playing" aria-live="polite"></p>
+      <div class="reveal-row"><button class="reveal" type="button" hidden>reveal labels</button></div>
+    </div>
+    <div class="table-wrap"><table id="loss-table"><caption class="visually-hidden">Measured results, 5 percent packet loss</caption></table></div>
+  </section>
+
+  <section class="panel" id="wb-section" hidden>
+    <div class="panel-head">
+      <h2>Wideband: 16&nbsp;kHz instead of 8&nbsp;kHz</h2>
+      <p>
+        The narrowband comparison above cannot show this part: an 8&nbsp;kHz recording has nothing above
+        4&nbsp;kHz to preserve. These clips come from a 48&nbsp;kHz recording.
+      </p>
+    </div>
+    <div class="player" data-group="wideband" data-player="wideband">
+      <div class="controls">
+        <button class="play" type="button" aria-label="Play or pause">Play</button>
+        <input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+        <span class="time">0:00 / 0:10</span>
+        <label class="blind"><input type="checkbox" class="blind-toggle"> blind test</label>
+      </div>
+      <div class="variants" role="group" aria-label="Choose codec"></div>
+      <p class="now-playing" aria-live="polite"></p>
+      <div class="reveal-row"><button class="reveal" type="button" hidden>reveal labels</button></div>
+    </div>
+  </section>
+
+  <section class="panel" id="wb-pending">
+    <div class="panel-head">
+      <h2>Wideband section: waiting for a recording</h2>
+      <p>
+        The wideband half of the comparison needs 12 seconds of real speech captured at 16&nbsp;kHz or more.
+        Until that recording exists this section stays empty on purpose: upsampling an 8&nbsp;kHz file would
+        show a codec difference that is not there.
+      </p>
+      <pre><code>./record_sample.sh
+./run_wideband.sh corpus/mic_sample_48k.wav
+./site/build_site.py</code></pre>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>How this was measured</h2>
+    </div>
+    <ul class="method">
+      <li>The 3.3.5a codec is the decompiled <code>ComSat/SPIRIT</code> source, compiled standalone and driven
+        the way <code>ComSatSoundCODEC.cpp</code> drives it: five 20&nbsp;ms subframes per 100&nbsp;ms frame on
+        the way in, and <code>while (bits - consumed &gt;= 72)</code> on the way out.</li>
+      <li>Opus is libopus 1.6 in VoIP mode, one encoder and one decoder per stream, with the frame sizes and
+        packet layouts shown in the table.</li>
+      <li>Speech is the Open Speech Repository American English set, published for VoIP codec testing, at 8&nbsp;kHz.</li>
+      <li>PESQ (P.862) and STOI are computed against the uncompressed source. Loss runs drop every 20th packet;
+        Opus runs use in-band FEC and decode the gap from the next packet.</li>
+      <li>Each clip is normalised to −20 LUFS before encoding to MP3 so codec gain differences do not bias the
+        comparison. MP3 is far above every candidate's own bitrate, but it is still a lossy layer: the WAV link
+        next to each clip is the exact decoded output.</li>
+    </ul>
+    <p class="caveat">
+      PESQ scores one clean signal against one degraded signal. It says nothing about four talkers at once,
+      the game's mixing, ducking, or the sound of a real headset microphone in a room. The absolute scores here
+      will be higher than what you hear in game; the ranking is what should carry over.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Generated <span id="generated"></span>. Corpus: <span id="corpus"></span>.
+      Delivery codec: <span id="delivery"></span>.
+    </p>
+  </footer>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
