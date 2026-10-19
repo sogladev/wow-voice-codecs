@@ -27,6 +27,9 @@ sox "corpus/${NAME}_trim.wav" -b 16 -r 48000 "corpus/${NAME}_ref48.wav" rate -v 
 sox "corpus/${NAME}_ref48.wav" -b 16 -r 16000 "corpus/${NAME}_ref16.wav" rate -v 16000 2>/dev/null
 sox "corpus/${NAME}_ref48.wav" -b 16 -r 8000  "corpus/${NAME}_ref8.wav"  rate -v 8000  2>/dev/null
 
+# the ceiling for any 8 kHz pipeline: the reference band-limited to 4 kHz, upsampled
+sox "corpus/${NAME}_ref8.wav" -b 16 -r 16000 "out/${NAME}_ceiling8k.wav" rate -v 16000 2>/dev/null
+
 echo "== bandwidth the sample actually contains =="
 for f in "corpus/${NAME}_ref48.wav"; do
     tools/build/wav_metrics band "$f" | sed 's/^/  /'

@@ -85,10 +85,13 @@
 
   <section class="panel" id="wb-section" hidden>
     <div class="panel-head">
-      <h2>Wideband: 16&nbsp;kHz instead of 8&nbsp;kHz</h2>
+      <h2>Wideband: 16 kHz instead of 8 kHz</h2>
       <p>
-        The narrowband comparison above cannot show this part: an 8&nbsp;kHz recording has nothing above
-        4&nbsp;kHz to preserve. These clips come from a 48&nbsp;kHz recording.
+        The narrowband comparison cannot show this part: an 8 kHz signal has nothing above 4 kHz, so no
+        codec can put it back. Every clip below is scored on the same wideband scale against the same
+        16 kHz recording, which makes the ceiling visible. The first clip is not a codec at all, it is
+        the uncompressed reference cut to 4 kHz and upsampled: whatever the codec, an 8 kHz pipeline
+        cannot beat it.
       </p>
     </div>
     <div class="player" data-group="wideband" data-player="wideband">
@@ -102,19 +105,21 @@
       <p class="now-playing" aria-live="polite"></p>
       <div class="reveal-row"><button class="reveal" type="button" hidden>reveal labels</button></div>
     </div>
+    <div class="table-wrap"><table id="wb-table"><caption class="visually-hidden">Measured results, wideband</caption></table></div>
   </section>
 
   <section class="panel" id="wb-pending">
     <div class="panel-head">
-      <h2>Wideband section: waiting for a recording</h2>
+      <h2>Wideband section: waiting for a wideband source</h2>
       <p>
-        The wideband half of the comparison needs 12 seconds of real speech captured at 16&nbsp;kHz or more.
-        Until that recording exists this section stays empty on purpose: upsampling an 8&nbsp;kHz file would
-        show a codec difference that is not there.
+        This half of the comparison needs 12 seconds of real speech captured at 16&nbsp;kHz or more.
+        Upsampling an 8&nbsp;kHz file would show a codec difference that is not there. Either drop in a
+        standard corpus or record a microphone sample:
       </p>
-      <pre><code>./record_sample.sh
-./run_wideband.sh corpus/mic_sample_48k.wav
-./site/build_site.py</code></pre>
+      <pre><code>./tools/run_wideband.sh corpus/librispeech_16k.wav
+./tools/record_sample.sh                       # 15 s from a microphone, 48 kHz
+./tools/run_wideband.sh corpus/mic_sample_48k.wav
+./tools/build_site.py</code></pre>
     </div>
   </section>
 

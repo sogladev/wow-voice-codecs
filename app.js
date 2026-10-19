@@ -318,6 +318,7 @@ async function main() {
   renderFooter(data);
   renderTable(data.narrowband.filter((v) => v.group === "nb"), "#nb-table");
   renderTable(data.narrowband.filter((v) => v.group === "loss"), "#loss-table");
+  renderTable(data.wideband || [], "#wb-table");
   wirePlayers(data);
 }
 

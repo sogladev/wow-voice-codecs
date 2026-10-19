@@ -13,7 +13,7 @@ Reproduce with `./build.sh`, `./run_preview.sh`, `./run_wideband.sh` in this dir
 |---|---|---|---|
 | `corpus/OSR_us_000_0010_8k.wav`, `..._0016_8k.wav` | 8 kHz | 33 s, 35 s | real recordings, published for VoIP codec testing |
 | `corpus/tts*_ref*.wav` | 22 kHz source | 6 s each | speech-shaped filler only, see the caveat on band-limited material |
-| a recording at 16 kHz or more | — | 12 s | still needed, see "what is missing" |
+| `corpus/librispeech_16k.wav` | 16 kHz | 12 s | LibriSpeech dev-clean (CC BY 4.0), standard wideband test material |
 
 PESQ (ITU-T P.862) and STOI are computed against the 8 kHz reference for narrowband
 comparisons, and against a 16 kHz reference for wideband comparisons.
@@ -67,26 +67,34 @@ Three findings:
    loss because it has no concealment in this client; Opus with in-band FEC keeps 3.12
    at 60 ms packets, and 3.38 at 20 ms packets.
 
-## Wideband: what is still missing
+## Wideband: 16 kHz instead of 8 kHz
 
-The 8 kHz corpus cannot show the wideband gain, by definition — it has no content
-above 4 kHz, so Opus at 16 kHz has nothing extra to preserve (measured: 99.3 % of the
-TTS material's energy sits below 4 kHz, and the 8 kHz recordings contain nothing else
-at all). A real recording at 16 kHz or more is needed:
+The 8 kHz corpus cannot show this part: it has no content above 4 kHz, so a wideband
+codec has nothing extra to preserve. The wideband runs therefore use **LibriSpeech**
+dev-clean (16 kHz, CC BY 4.0), two utterances concatenated into a 12 second sample.
 
-```
-./record_sample.sh                       # 15 s from the USB microphone, 48 kHz
-./run_wideband.sh corpus/mic_sample_48k.wav
-```
+Every candidate is scored with PESQ-WB against the same 16 kHz reference, including the
+narrowband ones after upsampling. The ceiling row is the uncompressed reference cut to
+4 kHz and upsampled: whatever the codec, an 8 kHz pipeline cannot score above it.
 
-That runner compares IPMR, Opus narrowband, Opus wideband (16/24/32 kbit/s) and Opus
-fullband (32/48/64 kbit/s) with PESQ narrowband and wideband scores, plus the energy
-per frequency band so the "muffled" difference becomes a number.
+| configuration | PESQ-WB | STOI | payload kbit/s | wire kbit/s | max packet |
+|---|---|---|---|---|---|
+| 8 kHz ceiling (band-limited reference) | 2.22 | 0.992 | – | – | – |
+| today: IPMR, 8 kHz, 100 ms | 1.37 | 0.843 | 6.3 | 9.1 | 111 B |
+| Opus 9.6 k, 8 kHz, 100 ms | 1.82 | 0.880 | 8.5 | 11.3 | 117 B |
+| Opus 9.6 k, 8 kHz, 60 ms | 1.94 | 0.890 | 9.1 | 13.7 | 84 B |
+| Opus 16 k, 16 kHz, 60 ms | 4.27 | 0.907 | 15.8 | 20.5 | 153 B |
+| Opus 24 k, 16 kHz, 60 ms | 4.47 | 0.916 | 23.9 | 28.5 | 219 B |
+| Opus 32 k, 16 kHz, 60 ms | 4.51 | 0.918 | 31.9 | 36.5 | 295 B |
 
-Expected shape, from the narrowband data above plus the fact that 16 kHz audio has
-twice the spectrum: wideband should add roughly the same step again (PESQ-WB in the
-3.5–4.3 range at 24 kbit/s, wire cost ~21 kbit/s at 100 ms packets), but this has to
-be measured on real wideband speech before it goes into the plan.
+Two conclusions:
+
+1. Codec quality inside 8 kHz is close to free: Opus at 9.6 kbit/s recovers most of what
+   IPMR throws away (1.37 → 1.94 on this scale, 2.69 → 4.16 on the narrowband scale) for
+   about 1.5 kbit/s more.
+2. Bandwidth is the bigger lever. Wideband jumps to 4.27 at 20.5 kbit/s. The 153 byte
+   largest packet no longer fits the client's 124-byte frame cap, so this is the step that
+   needs the framing and time-base hooks described in the plan, not just the codec hook.
 
 ## Caveats
 

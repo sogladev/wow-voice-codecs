@@ -43,7 +43,28 @@ Two things worth noticing:
   plus UDP/IPv4 costs 14 kbit/s before any audio; the same audio at 10 packets per second
   costs 10.8 kbit/s.
 
-Full report, including the wideband half and the caveats: [RESULTS.md](RESULTS.md).
+## Wideband: 16 kHz instead of 8 kHz
+
+Measured on LibriSpeech dev-clean (16 kHz, CC BY 4.0). Every row is scored with
+PESQ-WB against the same 16 kHz reference, so narrowband and wideband candidates share
+one scale. The first row is not a codec: it is the uncompressed reference cut to 4 kHz
+and upsampled, which is the best any 8 kHz pipeline can ever score.
+
+| configuration | PESQ-WB | STOI | wire kbit/s |
+|---|---|---|---|
+| 8 kHz ceiling (band-limited reference) | 2.22 | 0.992 | – |
+| today: IPMR, 8 kHz | 1.37 | 0.843 | 9.1 |
+| Opus 9.6 kbit/s, 8 kHz, 100 ms | 1.82 | 0.880 | 11.3 |
+| Opus 9.6 kbit/s, 8 kHz, 60 ms | 1.94 | 0.890 | 13.7 |
+| Opus 16 kbit/s, 16 kHz, 60 ms | 4.27 | 0.907 | 20.5 |
+| Opus 24 kbit/s, 16 kHz, 60 ms | 4.47 | 0.916 | 28.5 |
+| Opus 32 kbit/s, 16 kHz, 60 ms | 4.51 | 0.918 | 36.5 |
+
+Narrowband gets a better number for the same band (2.69 → 3.91 on the narrowband scale),
+but it cannot leave the 8 kHz ceiling: at 20–28 kbit/s and 16 kHz, Opus scores 4.3–4.5 on
+this scale for roughly double the bandwidth of today's protocol.
+
+Full report, including the caveats: [RESULTS.md](RESULTS.md).
 
 ## Reproducing the numbers
 
@@ -52,7 +73,8 @@ client (Spirit IPMR is its codec, and it is not redistributed here) and libopus.
 
 ```bash
 DECOMP=/path/to/wowdecomp ./tools/build.sh     # builds the IPMR probe
-./tools/run_preview.sh                         # runs both codecs over the speech corpus
+./tools/run_preview.sh                         # narrowband runs over the 8 kHz corpus
+./tools/run_wideband.sh corpus/librispeech_16k.wav
 ./tools/build_site.py                          # clips + PESQ + data.json for this page
 ./serve.sh                                     # http://127.0.0.1:8788/
 ```
@@ -61,14 +83,17 @@ DECOMP=/path/to/wowdecomp ./tools/build.sh     # builds the IPMR probe
 −20 LUFS, writes a WAV at the source rate plus a 192 kbit/s mono MP3 for the player,
 recomputes PESQ and STOI, and rewrites `data.json`.
 
-The wideband section of the page stays hidden until a real ≥16 kHz recording has been
-measured:
+## Speech corpora
 
-```bash
-./tools/record_sample.sh                       # 15 s from a microphone, 48 kHz
-./tools/run_wideband.sh corpus/mic_sample_48k.wav
-./tools/build_site.py
-```
+- Narrowband: the **Open Speech Repository** American English Harvard sentences at 8 kHz,
+  published for VoIP codec testing.
+- Wideband: **LibriSpeech** dev-clean utterances at 16 kHz (CC BY 4.0, OpenSLR SLR12),
+  concatenated into a 12 second sample. This is standard material for speech codec work,
+  which is why the published numbers do not depend on anyone's microphone.
+
+`./tools/record_sample.sh` is still there if a real headset microphone sample is wanted:
+the wideband section picks up `corpus/mic_sample_48k.*` in preference to the corpus when
+it exists.
 
 ## Layout
 

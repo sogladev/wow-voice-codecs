@@ -21,6 +21,13 @@ American English recordings, published for VoIP codec testing:
 Specifically `OSR_us_000_0010_8k.wav`, cut to a ten second window, loudness-normalised,
 and re-encoded. See the source page for the terms that apply to those recordings.
 
+## LibriSpeech
+
+The wideband clips under `assets/clips/wb_*` are derived from **LibriSpeech** dev-clean
+(OpenSLR SLR12, https://www.openslr.org/12/), read English speech at 16 kHz, licensed
+under Creative Commons Attribution 4.0. The excerpt is cut to a 12 second window,
+loudness-normalised and re-encoded; it is not the original file.
+
 ## Opus
 
 Opus is used through libopus (Xiph.Org / IETF RFC 6716), licensed under BSD. The page

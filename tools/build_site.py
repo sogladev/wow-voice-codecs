@@ -52,15 +52,37 @@ VARIANTS = [
      "Small packets shrink each loss to 20 ms, so the same loss pattern hurts less."),
 ]
 
-# optional wideband section, filled in when a >=16 kHz recording has been measured
+# Wideband section. Every entry is scored with PESQ-WB against the 16 kHz reference,
+# so narrowband candidates (upsampled) and wideband candidates share one scale. The
+# "ceiling" clip is the uncompressed reference cut to 4 kHz: no 8 kHz pipeline can
+# score above it.
 WIDEBAND = [
-    ("ref16", "original", "corpus/{name}_ref16.wav", None, None, "wideband", "Wideband reference."),
-    ("wb_16k", "Opus 16 kbit/s, 16 kHz", "out/{name}_opus16k_16000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband", "Opus wideband."),
-    ("wb_24k", "Opus 24 kbit/s, 16 kHz", "out/{name}_opus16k_24000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband", "Opus wideband."),
-    ("wb_32k", "Opus 32 kbit/s, 16 kHz", "out/{name}_opus16k_32000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband", "Opus wideband."),
-    ("fb_32k", "Opus 32 kbit/s, 48 kHz", "out/{name}_opus48k_32000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband", "Opus fullband."),
-    ("fb_48k", "Opus 48 kbit/s, 48 kHz", "out/{name}_opus48k_48000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband", "Opus fullband."),
+    ("wb_ceiling8k", "8 kHz ceiling: reference cut to 4 kHz",
+     "out/{name}_ceiling8k.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "Not a codec: the uncompressed recording, band-limited to 4 kHz and upsampled. It is the best any 8 kHz pipeline can do."),
+    ("wb_ipmr", "today: Spirit IPMR, 8 kHz",
+     "out/{name}_ipmr8k.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "The 2007 codec scored on the wideband scale, so its missing 4-8 kHz band counts against it."),
+    ("wb_opus_nb_100", "Opus 9.6 kbit/s, 8 kHz, 100 ms packets",
+     "out/{name}_opus8k_f5.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "Opus narrowband in today's packet shape. Better than IPMR, still capped by the 8 kHz ceiling."),
+    ("wb_opus_nb_60", "Opus 9.6 kbit/s, 8 kHz, 60 ms packets",
+     "out/{name}_opus8k_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "Opus narrowband, shorter packets."),
+    ("wb_opus_16k", "Opus 16 kbit/s, 16 kHz, 60 ms packets",
+     "out/{name}_opus16k_16000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "Wideband: twice the spectrum, first configuration that clears the ceiling."),
+    ("wb_opus_24k", "Opus 24 kbit/s, 16 kHz, 60 ms packets",
+     "out/{name}_opus16k_24000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "The recommended balance if bandwidth is not scarce."),
+    ("wb_opus_32k", "Opus 32 kbit/s, 16 kHz, 60 ms packets",
+     "out/{name}_opus16k_32000_f3.wav", "corpus/{name}_ref16.wav", "wb", "wideband",
+     "Diminishing returns start here."),
 ]
+
+# wideband corpora in order of preference: a real microphone recording, then the
+# standard 16 kHz speech corpus used for the published numbers
+WIDEBAND_SAMPLES = ["mic_sample_48k", "librispeech_16k"]
 
 
 def run(cmd, **kw):
@@ -77,6 +99,20 @@ def read_csv(path):
                 k, v = line.strip().split(",")[:2]
                 out[k] = v
     return out
+
+
+_RESAMPLE_CACHE = {}
+
+
+def at_rate(path, mode):
+    """PESQ wants both files at one rate: 8 kHz for nb, 16 kHz for wb."""
+    rate = "8000" if mode == "nb" else "16000"
+    key = (path, rate)
+    if key not in _RESAMPLE_CACHE:
+        out = path + f".{rate}.wav"
+        r = run(["sox", path, "-b", "16", "-r", rate, out, "rate", "-v", rate])
+        _RESAMPLE_CACHE[key] = out if r.returncode == 0 else path
+    return _RESAMPLE_CACHE[key]
 
 
 def pesq(ref, deg, mode):
@@ -149,7 +185,7 @@ def main():
         base = clips / vid
         if not trim_and_encode(src, str(base), str(clips)):
             continue
-        p, s = pesq(ref, src, mode) if ref else (None, None)
+        p, s = pesq(ref, at_rate(src, mode), mode) if ref and mode else (None, None)
         meta = read_csv(src[:-4] + ".csv")
         items.append({
             "id": vid, "label": label, "group": group, "note": note,
@@ -165,8 +201,9 @@ def main():
         print(f"  {vid}: pesq={p} stoi={s} wire={meta.get('bitrate_kbps_wire')}")
 
     wideband = []
-    sample = "mic_sample_48k"
-    if os.path.exists(f"corpus/{sample}_ref16.wav"):
+    sample = next((s for s in WIDEBAND_SAMPLES if os.path.exists(f"corpus/{s}_ref16.wav")), None)
+    print(f"  wideband corpus: {sample or 'none found'}")
+    if sample:
         for vid, label, src_t, ref_t, mode, group, note in WIDEBAND:
             src = src_t.format(name=sample)
             ref = ref_t.format(name=sample) if ref_t else None
@@ -176,7 +213,7 @@ def main():
             base = clips / vid
             if not trim_and_encode(src, str(base), str(clips)):
                 continue
-            p, s = pesq(ref, src, mode) if ref else (None, None)
+            p, s = pesq(ref, at_rate(src, mode), mode) if ref and mode else (None, None)
             meta = read_csv(src[:-4] + ".csv")
             wideband.append({
                 "id": vid, "label": label, "group": group, "note": note,
