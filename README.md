@@ -56,9 +56,17 @@ and upsampled, which is the best any 8 kHz pipeline can ever score.
 | today: IPMR, 8 kHz | 1.37 | 0.843 | 9.1 |
 | Opus 9.6 kbit/s, 8 kHz, 100 ms | 1.82 | 0.880 | 11.3 |
 | Opus 9.6 kbit/s, 8 kHz, 60 ms | 1.94 | 0.890 | 13.7 |
+| Opus 9.6 kbit/s, 16 kHz, 100 ms | 2.51 | 0.855 | 11.4 |
+| Opus 16 kbit/s, 16 kHz, 100 ms | 4.04 | 0.902 | 17.0 |
 | Opus 16 kbit/s, 16 kHz, 60 ms | 4.27 | 0.907 | 20.5 |
 | Opus 24 kbit/s, 16 kHz, 60 ms | 4.47 | 0.916 | 28.5 |
 | Opus 32 kbit/s, 16 kHz, 60 ms | 4.51 | 0.918 | 36.5 |
+
+The 9.6 kbit/s wideband row matters for scheduling the work: its largest packet is 118
+bytes, inside the client's existing 124-byte frame cap, so wideband can start with only
+the sample-rate change and no framing rework. Clearing the 8 kHz ceiling properly needs
+16–24 kbit/s, and those packets are 153–219 bytes, which is the step that forces the
+framing and time-base hooks.
 
 Narrowband gets a better number for the same band (2.69 → 3.91 on the narrowband scale),
 but it cannot leave the 8 kHz ceiling: at 20–28 kbit/s and 16 kHz, Opus scores 4.3–4.5 on
